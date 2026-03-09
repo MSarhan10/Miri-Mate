@@ -407,6 +407,50 @@
         </div>
     </div>
 
+    <!-- Medscape AI Full-Screen Modal -->
+<div id="medscape-modal" style="
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: #ffffff; z-index: 2000; flex-direction: column;
+">
+    <div style="
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 10px 16px; background: #0369a1; color: white;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15); flex-shrink: 0;
+    ">
+        <button onclick="closeMedscape()" style="
+            background: rgba(255,255,255,0.2); border: none; color: white;
+            font-size: 1.3rem; border-radius: 50%; width: 38px; height: 38px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+        ">✕</button>
+        <span style="font-weight: 700; font-size: 1.1rem;">🩺 Medscape AI</span>
+        <button onclick="window.open('https://www.medscape.com/search', '_blank')" style="
+            background: rgba(255,255,255,0.2); border: none; color: white;
+            font-size: 0.85rem; border-radius: 8px; padding: 6px 12px;
+            cursor: pointer; font-weight: 600;
+        ">Open in Browser ↗</button>
+    </div>
+    <div id="medscape-fallback" style="
+        display: none; text-align: center; padding: 40px 20px; color: #64748b;
+    ">
+        <div style="font-size: 3rem; margin-bottom: 16px;">🩺</div>
+        <div style="font-size: 1.1rem; font-weight: 600; color: #334155; margin-bottom: 8px;">
+            Medscape blocked embedded loading
+        </div>
+        <div style="margin-bottom: 20px;">Tap the button below to open it in your browser.</div>
+        <button onclick="window.open('https://www.medscape.com/search', '_blank')" style="
+            background: #0369a1; color: white; border: none; padding: 14px 28px;
+            border-radius: 12px; font-size: 1.1rem; font-weight: 600; cursor: pointer;
+        ">Open Medscape AI ↗</button>
+    </div>
+    <iframe id="medscape-iframe"
+        src=""
+        style="flex-grow: 1; width: 100%; border: none;"
+        sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+        allow="clipboard-read; clipboard-write"
+        onload="checkMedscapeLoaded()"
+    ></iframe>
+</div>
+
     <div id="toast">Message</div>
 
     <script>
