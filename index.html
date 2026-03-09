@@ -87,8 +87,12 @@
             border-radius: 8px; padding: 4px 10px; margin-left: 6px; color: var(--text-main); font-weight: bold;
         }
         .patient-header-right button:active { background: var(--divider); }
-        .patient-header-right button.has-tasks { background: #fef08a; border-color: #fde047; color: #854d0e; }
-        
+        .patient-header-right button.has-tasks { background: #ef4444; border-color: #b91c1c; color: white;  animation: pulse 1.5s infinite;}
+        @keyframes pulse {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+        70% { transform: scale(1.05); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
         .drag-handle {
             font-size: 1.5rem; color: #94a3b8; padding: 5px 15px 5px 0; cursor: grab; user-select: none; touch-action: none;
         }
