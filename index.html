@@ -1450,6 +1450,61 @@
             const toast = document.getElementById("toast"); toast.innerText = msg; toast.className = "show";
             setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
         }
+
+        // =============================================
+// MEDSCAPE AI EMBED
+// =============================================
+function openMedscapeAI() {
+    document.getElementById('toolbox-modal').style.display = 'none';
+    const modal = document.getElementById('medscape-modal');
+    const iframe = document.getElementById('medscape-iframe');
+    const fallback = document.getElementById('medscape-fallback');
+
+    fallback.style.display = 'none';
+    iframe.style.display = 'block';
+    modal.style.display = 'flex';
+
+    iframe.src = 'https://www.medscape.com/search';
+
+    // Timeout fallback: if iframe stays blank after 5s, show fallback
+    clearTimeout(window._medscapeTimeout);
+    window._medscapeTimeout = setTimeout(() => {
+        try {
+            // Try accessing iframe content — will throw if blocked by X-Frame-Options
+            const doc = iframe.contentDocument || iframe.contentWindow.document;
+            if (!doc || !doc.body || doc.body.innerHTML.length < 50) {
+                showMedscapeFallback();
+            }
+        } catch (e) {
+            showMedscapeFallback();
+        }
+    }, 5000);
+}
+
+function checkMedscapeLoaded() {
+    try {
+        const iframe = document.getElementById('medscape-iframe');
+        const doc = iframe.contentDocument || iframe.contentWindow.document;
+        if (!doc || !doc.body || doc.body.innerHTML.length < 50) {
+            showMedscapeFallback();
+        }
+    } catch (e) {
+        showMedscapeFallback();
+    }
+}
+
+function showMedscapeFallback() {
+    document.getElementById('medscape-iframe').style.display = 'none';
+    document.getElementById('medscape-fallback').style.display = 'block';
+}
+
+function closeMedscape() {
+    const modal = document.getElementById('medscape-modal');
+    const iframe = document.getElementById('medscape-iframe');
+    modal.style.display = 'none';
+    iframe.src = '';
+    clearTimeout(window._medscapeTimeout);
+        }
     </script>
 </body>
     </html>             
