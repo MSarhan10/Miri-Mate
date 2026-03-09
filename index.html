@@ -423,99 +423,31 @@
         let mainThreadTimers = {}; 
 
         // =============================================
-        // SERVICE WORKER
+        // SERVICE WORKER & NOTIFICATIONS
         // =============================================
         let swRegistration = null;
         let swReady = false;
 
-        const SW_CODE = `
-            let pendingTimers = new Map();
-
-            self.addEventListener('install', e => self.skipWaiting());
-            self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
-
-            self.addEventListener('message', e => {
-                const d = e.data;
-                if (d.type === 'SCHEDULE') {
-                    if (pendingTimers.has(d.taskId)) {
-                        clearTimeout(pendingTimers.get(d.taskId));
-                        pendingTimers.delete(d.taskId);
-                    }
-                    const delay = d.fireTime - Date.now();
-                    if (delay <= 0) {
-                        fireNotification(d);
-                        return;
-                    }
-                    e.waitUntil(new Promise(resolve => {
-                        const timer = setTimeout(() => {
-                            fireNotification(d);
-                            pendingTimers.delete(d.taskId);
-                            resolve();
-                        }, delay);
-                        pendingTimers.set(d.taskId, timer);
-                    }));
-                } else if (d.type === 'CANCEL') {
-                    if (pendingTimers.has(d.taskId)) {
-                        clearTimeout(pendingTimers.get(d.taskId));
-                        pendingTimers.delete(d.taskId);
-                    }
-                } else if (d.type === 'CANCEL_ALL') {
-                    pendingTimers.forEach((timer) => clearTimeout(timer));
-                    pendingTimers.clear();
-                }
-            });
-
-            function fireNotification(d) {
-                self.registration.showNotification(d.title, {
-                    body: d.body,
-                    tag: 'sarhan-task-' + d.taskId,
-                    requireInteraction: true,
-                    vibrate: [300, 100, 300, 100, 300],
-                    actions: [{ action: 'dismiss', title: 'Dismiss' }]
-                });
-                self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
-                    clients.forEach(c => c.postMessage({ type: 'TASK_FIRED', taskId: d.taskId }));
-                });
-            }
-
-            self.addEventListener('notificationclick', e => {
-                e.notification.close();
-                e.waitUntil(
-                    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
-                        if (clients.length > 0) { clients[0].focus(); }
-                        else { self.clients.openWindow('./'); }
-                    })
-                );
-            });
-        `;
-
         function initServiceWorker() {
             if (!('serviceWorker' in navigator)) return;
-            try {
-                const blob = new Blob([SW_CODE], { type: 'application/javascript' });
-                const swUrl = URL.createObjectURL(blob);
-                navigator.serviceWorker.register(swUrl).then(reg => {
-                    swRegistration = reg;
-                    swReady = true;
-                    setTimeout(() => rescheduleAllTasksToSW(), 1000);
-                }).catch(err => swReady = false);
+            
+            // Registering the external file sw.js
+            navigator.serviceWorker.register('./sw.js').then(reg => {
+                swRegistration = reg;
+                swReady = true;
+                setTimeout(() => rescheduleAllTasksToSW(), 1000);
+            }).catch(err => {
+                console.error("SW Registration failed:", err);
+                swReady = false;
+            });
 
-                navigator.serviceWorker.addEventListener('message', e => {
-                    if (e.data.type === 'TASK_FIRED') {
-                        playBeep();
-                        let taskText = '';
-                        const gt = appData.generalTasks.find(tx => tx.id === e.data.taskId);
-                        if (gt) taskText = gt.text;
-                        else {
-                            appData.rooms.forEach(r => r.patients.forEach(p => {
-                                const t = p.tasks.find(tx => tx.id === e.data.taskId);
-                                if (t) taskText = t.text;
-                            }));
-                        }
-                        if (taskText) showToast(`⏰ ${taskText}`);
-                    }
-                });
-            } catch (e) { swReady = false; }
+            navigator.serviceWorker.addEventListener('message', e => {
+                if (e.data.type === 'TASK_FIRED') {
+                    playBeep();
+                    showToast(`⏰ Task Reminder!`);
+                    checkOverdueTasks();
+                }
+            });
         }
 
         function sendToSW(message) {
@@ -525,17 +457,17 @@
             return false;
         }
 
-        // =============================================
-        // NOTIFICATIONS
-        // =============================================
         function scheduleNotification(task, patientName) {
             const delay = task.time - Date.now();
             if (delay <= 0) return;
 
-            const title = patientName === 'General Task' ? `⏰ General Task` : `⏰ Task: ${patientName}`;
+            // Format requested: Title is Patient Name (or "General Task"), Body is the Task itself
+            const title = patientName === 'General Task' ? 'General Task' : patientName;
+            const body = task.text;
             
-            sendToSW({ type: 'SCHEDULE', taskId: task.id, fireTime: task.time, title: title, body: task.text });
+            sendToSW({ type: 'SCHEDULE', taskId: task.id, fireTime: task.time, title: title, body: body });
 
+            // Keeping a local timer running just in case the app stays open on screen
             if (mainThreadTimers[task.id]) clearTimeout(mainThreadTimers[task.id]);
             mainThreadTimers[task.id] = setTimeout(() => {
                 let stillPending = false;
@@ -545,10 +477,8 @@
                 }));
                 
                 if (stillPending) {
-                    playBeep(); showToast(`⏰ Reminder: ${task.text}`);
-                    if (!swReady && 'Notification' in window && Notification.permission === 'granted') {
-                        try { new Notification(title, { body: task.text }); } catch (e) {}
-                    }
+                    playBeep(); 
+                    showToast(`⏰ ${title}: ${body}`);
                 }
                 delete mainThreadTimers[task.id];
             }, delay);
@@ -1524,4 +1454,4 @@
         }
     </script>
 </body>
-</html>
+    </html>
