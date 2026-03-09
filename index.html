@@ -1631,6 +1631,215 @@ function closeMedscapePill() {
     medscapeWindow = null;
     if (medscapeChecker) { clearInterval(medscapeChecker); medscapeChecker = null; }
 }
+
+// =============================================
+// LAB VALUES REFERENCE
+// =============================================
+const LAB_DATA = [
+    {
+        icon: "🩺", category: "Vital Signs", subtitle: "Baseline Assessment", catNote: null,
+        tests: [
+            { name: "Blood Pressure", range: "Systolic: 120 / Diastolic: 80 mmHg" },
+            { name: "Heart Rate", range: "60–100 BPM" },
+            { name: "Respirations", range: "12–20 breaths/min" },
+            { name: "Oxygen Saturation (SpO2)", range: "95%–100%" },
+            { name: "Temperature", range: "°F: 96.4–99.5 · °C: 36.1–37.2" }
+        ]
+    },
+    {
+        icon: "🩸", category: "Complete Blood Count", subtitle: "CBC — Hematology", catNote: null,
+        tests: [
+            { name: "WBC", range: "5,000–10,000" },
+            { name: "RBC", male: "4.2–5.4", female: "3.6–5.0" },
+            { name: "Platelets (PLT)", range: "140,000–400,000", note: "Critical: < 50,000 → ↑ risk of bleeding\nCritical: > 100,000 → ↑ risk of clots" },
+            { name: "Hemoglobin (Hgb)", male: "13–18 g/dL", female: "12–16 g/dL" },
+            { name: "Hematocrit (HCT)", male: "42%–52%", female: "36%–48%" }
+        ]
+    },
+    {
+        icon: "🧪", category: "Basic Metabolic Panel", subtitle: "BMP — Chemistry & Electrolytes", catNote: null,
+        tests: [
+            { name: "Sodium (Na)", range: "135–145 mEq/L" },
+            { name: "Potassium (K)", range: "3.5–5.0 mEq/L" },
+            { name: "Chloride (Cl)", range: "97–107 mEq/L" },
+            { name: "Calcium (Ca)", range: "8.5–10.5 mEq/L" },
+            { name: "Magnesium (Mg)", range: "1.2–2.3 mg/dL" },
+            { name: "Phosphorus (P)", range: "2.5–4.5 mg/dL" },
+            { name: "Albumin", range: "3.5–5.5 g/dL" },
+            { name: "Total Protein", range: "6–8 g/dL" }
+        ]
+    },
+    {
+        icon: "💧", category: "Renal Function", subtitle: "Kidney & Fluid Balance", catNote: null,
+        tests: [
+            { name: "BUN", range: "10–20 mg/dL" },
+            { name: "Creatinine", male: "0.6–1.2 mg/dL", female: "0.4–1.0 mg/dL", note: "Specific to kidney function" },
+            { name: "Specific Gravity", range: "1.005–1.030", note: "dilute ← → concentrated" },
+            { name: "GFR", range: "125–200 mL/min" }
+        ]
+    },
+    {
+        icon: "🛡️", category: "Liver Function", subtitle: "LFT — Hepatic Function", catNote: null,
+        tests: [
+            { name: "ALT", male: "10–40 U/L", female: "8–35 U/L" },
+            { name: "AST", range: "5–40 U/L" },
+            { name: "ALP", range: "40–120 U/L" },
+            { name: "Bilirubin", range: "0.3–1.0 mg/dL" }
+        ]
+    },
+    {
+        icon: "🍽️", category: "Pancreas", subtitle: "Digestive Enzymes", catNote: null,
+        tests: [
+            { name: "Amylase", range: "25–125 U/L", note: "Older Adults: 24–151 U/L\nFunction: Breakdown of starches" },
+            { name: "Lipase", range: "< 140 U/L", note: "Function: Breakdown of fats" },
+            { name: "Pancreatitis Threshold", range: "> 200 U/L COMBINED", note: "Amylase total + Lipase total" }
+        ]
+    },
+    {
+        icon: "🍬", category: "Glucose & HbA1C", subtitle: "Endocrine / Blood Sugar", catNote: null,
+        tests: [
+            { name: "Fasting Glucose", range: "70–110 mg/dL" },
+            { name: "Casual Glucose", range: "< 200 mg/dL" },
+            { name: "HbA1C — Non-Diabetic", range: "4–6%", note: "HbA1C is the average blood sugar over 3 months (lifespan of an RBC), making it a better long-term indicator than a single glucose reading." },
+            { name: "HbA1C — Pre-Diabetic", range: "5.7–6.4%" },
+            { name: "HbA1C — Diabetic", range: "> 6.5%" }
+        ]
+    },
+    {
+        icon: "🫀", category: "Lipid Panel", subtitle: "Cardiovascular Risk", catNote: null,
+        tests: [
+            { name: "Total Cholesterol", male: "< 205 mg/dL", female: "< 190 mg/dL" },
+            { name: "Triglycerides", male: "44–180 mg/dL", female: "10–190 mg/dL" },
+            { name: "LDL", range: "< 100 mg/dL", note: "BAD cholesterol — Lower is better" },
+            { name: "HDL", range: "> 60 mg/dL", note: "GOOD cholesterol — Higher is better" }
+        ]
+    },
+    {
+        icon: "🩹", category: "Coagulation", subtitle: "COAGs — Bleeding Times", catNote: "⚠️ The higher these numbers, the greater the risk of bleeding!",
+        tests: [
+            { name: "PT", range: "11–13 seconds", note: "Therapeutic on Warfarin: 22–32.5 seconds" },
+            { name: "INR", range: "0.8–1.1", note: "Therapeutic on Warfarin: 2.0–3.0" },
+            { name: "PTT", range: "21–35 seconds", note: "Therapeutic on Heparin: 31.5–87.5 seconds" }
+        ]
+    },
+    {
+        icon: "🫁", category: "ABGs", subtitle: "Respiratory & Acid-Base Balance",
+        catNote: "ROME: Respiratory = Opposite, Metabolic = Equal\n• CO2 ↑ pH ↓ = Respiratory Acidosis\n• CO2 ↓ pH ↑ = Respiratory Alkalosis\n• HCO3 ↓ pH ↓ = Metabolic Acidosis\n• HCO3 ↑ pH ↑ = Metabolic Alkalosis",
+        tests: [
+            { name: "pH", range: "7.35–7.45", note: "← acidic · basic →" },
+            { name: "PaCO2", range: "35–45 mmHg", note: "← basic · acidic → (opposite of pH)" },
+            { name: "PaO2", range: "80–100 mmHg" },
+            { name: "HCO3 (Bicarbonate)", range: "22–26 mEq/L", note: "← acidic · basic → (same as pH)" }
+        ]
+    },
+    {
+        icon: "📊", category: "Other Key Parameters", subtitle: "Neuro, Systemic & Physical", catNote: null,
+        tests: [
+            { name: "Serum Osmolality", range: "280–300 mOsm/L", note: "Concentration of particles compared to water" },
+            { name: "MAP (Mean Arterial Pressure)", range: "70–100 mmHg" },
+            { name: "ICP (Intracranial Pressure)", range: "5–15 mmHg" },
+            { name: "BMI (Body Mass Index)", range: "18.5–24.9" },
+            { name: "Glasgow Coma Scale (GCS)", range: "Best = 15", note: "Mild: 13–15\nModerate: 9–12\nSevere: 3–8" }
+        ]
+    }
+];
+
+function openLabValues() {
+    closeModals();
+    document.getElementById('lab-search-input').value = '';
+    renderLabValues('');
+    document.getElementById('lab-modal').style.display = 'flex';
+}
+
+function closeLabValues() {
+    document.getElementById('lab-modal').style.display = 'none';
+}
+
+function filterLabs(query) {
+    renderLabValues(query);
+}
+
+function renderLabValues(filter) {
+    const container = document.getElementById('lab-values-content');
+    container.innerHTML = '';
+    const q = filter.toLowerCase().trim();
+    let anyResults = false;
+
+    LAB_DATA.forEach(cat => {
+        const matchingTests = cat.tests.filter(t => {
+            if (!q) return true;
+            const searchIn = (t.name + ' ' + cat.category + ' ' + cat.subtitle + ' ' + (t.range || '') + ' ' + (t.male || '') + ' ' + (t.female || '') + ' ' + (t.note || '')).toLowerCase();
+            return searchIn.includes(q);
+        });
+
+        if (matchingTests.length === 0) return;
+        anyResults = true;
+
+        const catEl = document.createElement('div');
+        catEl.className = 'lab-category';
+
+        // Category header
+        let catHTML = `
+            <div class="lab-cat-header">
+                <span class="lab-cat-icon">${cat.icon}</span>
+                <div>
+                    <span class="lab-cat-title">${cat.category}</span>
+                    <span class="lab-cat-sub">${cat.subtitle}</span>
+                </div>
+            </div>
+        `;
+
+        // Category-level note
+        if (cat.catNote) {
+            catHTML += `<div class="lab-cat-note">${cat.catNote.replace(/\n/g, '<br>')}</div>`;
+        }
+
+        catEl.innerHTML = catHTML;
+
+        // Test rows
+        matchingTests.forEach(t => {
+            const rowEl = document.createElement('div');
+            rowEl.className = 'lab-row';
+
+            let rangeHTML = '';
+            if (t.male && t.female) {
+                rangeHTML = `<span class="gender male">♂</span> ${t.male}<br><span class="gender female">♀</span> ${t.female}`;
+            } else {
+                rangeHTML = t.range || '';
+            }
+
+            const noteId = 'note_' + Math.random().toString(36).substr(2, 9);
+
+            rowEl.innerHTML = `
+                <div class="lab-row-info">
+                    <div class="lab-name">${t.name}</div>
+                    <div class="lab-range">${rangeHTML}</div>
+                    ${t.note ? `<div class="lab-note-box" id="${noteId}">${t.note.replace(/\n/g, '<br>')}</div>` : ''}
+                </div>
+                ${t.note ? `<button class="lab-info-btn" onclick="toggleLabNote('${noteId}', this)" title="More info">i</button>` : ''}
+            `;
+
+            catEl.appendChild(rowEl);
+        });
+
+        container.appendChild(catEl);
+    });
+
+    if (!anyResults) {
+        container.innerHTML = `<div class="lab-no-results">No results for "${filter}" 🔍</div>`;
+    }
+}
+
+function toggleLabNote(noteId, btn) {
+    const noteEl = document.getElementById(noteId);
+    if (noteEl.classList.contains('open')) {
+        noteEl.classList.remove('open');
+        btn.style.background = '#e0f2fe';
+    } else {
+        noteEl.classList.add('open');
+        btn.style.background = '#bae6fd';
+    }
+             }
         
     </script>
 </body>
