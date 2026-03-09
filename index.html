@@ -1847,6 +1847,33 @@ function toggleLabNote(noteId, btn) {
         btn.style.background = '#bae6fd';
     }
              }
+
+// =============================================
+// SERVICE WORKER REGISTRATION
+// =============================================
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js')
+            .then(reg => {
+                console.log('SW registered:', reg.scope);
+
+                // Check for updates every 30 minutes
+                setInterval(() => { reg.update(); }, 30 * 60 * 1000);
+
+                // When a new version is found, notify user
+                reg.addEventListener('updatefound', () => {
+                    const newWorker = reg.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'activated') {
+                            showToast('🔄 App updated! Refreshing...');
+                            setTimeout(() => location.reload(), 1500);
+                        }
+                    });
+                });
+            })
+            .catch(err => console.log('SW registration failed:', err));
+    });
+}
         
     </script>
 </body>
