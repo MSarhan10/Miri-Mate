@@ -207,8 +207,42 @@
         /* Custom Toolbox Buttons (Adapts to Dark Mode) */
         .btn-medscape { background: #e0f2fe; border-color: #7dd3fc; color: #0369a1; }
         .btn-labs { background: #fef3c7; border-color: #fde68a; color: #92400e; }
+        .btn-ddx { background: #dcfce7; border-color: #4ade80; color: #166534; }
         :root[data-theme="dark"] .btn-medscape { background: #082f49; border-color: #0369a1; color: #bae6fd; }
         :root[data-theme="dark"] .btn-labs { background: #451a03; border-color: #78350f; color: #fde68a; }
+        :root[data-theme="dark"] .btn-ddx { background: #064e3b; border-color: #047857; color: #a7f3d0; }
+
+        /* DDx Modal Styles */
+        #ddx-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg); z-index: 2000; flex-direction: column;
+        }
+        .ddx-systems-bar { display: flex; overflow-x: auto; padding: 12px; gap: 10px; background: var(--surface); border-bottom: 1px solid var(--divider); flex-shrink: 0; -webkit-overflow-scrolling: touch; }
+        .ddx-sys-btn { padding: 8px 16px; border-radius: 20px; border: 2px solid var(--primary); background: var(--bg); color: var(--text-main); font-weight: 700; white-space: nowrap; cursor: pointer; transition: 0.2s; }
+        .ddx-sys-btn.active { background: var(--primary); color: white; }
+        
+        /* Removed the old inline panel, added bottom sheet content and link styles */
+        .ddx-symptoms-sheet-content { max-height: 50vh; overflow-y: auto; padding-bottom: 20px; -webkit-overflow-scrolling: touch; }
+        .ddx-symp-group-title { font-weight: 800; margin: 10px 0; color: var(--primary); font-size: 0.95rem; text-transform: uppercase; }
+        .ddx-symp-chip { display: inline-block; padding: 6px 12px; margin: 0 6px 8px 0; border-radius: 8px; background: var(--bg); border: 1px solid var(--divider); color: var(--text-main); font-weight: 600; cursor: pointer; transition: 0.1s; }
+        .ddx-symp-chip.selected { background: var(--primary); color: white; border-color: var(--primary-dark); }
+        
+        .ddx-medscape-link { display: inline-flex; align-items: center; gap: 6px; background: #e0f2fe; color: #0369a1; padding: 8px 14px; border-radius: 10px; font-size: 0.9rem; font-weight: 700; text-decoration: none; border: 1px solid #7dd3fc; margin-top: 12px; transition: background 0.2s; }
+        .ddx-medscape-link:active { background: #bae6fd; }
+        :root[data-theme="dark"] .ddx-medscape-link { background: #082f49; color: #bae6fd; border-color: #0369a1; }
+        :root[data-theme="dark"] .ddx-medscape-link:active { background: #0c4a6e; }
+
+        .ddx-active-chips { display: flex; overflow-x: auto; padding: 0 16px 10px 16px; gap: 8px; flex-shrink: 0; -webkit-overflow-scrolling: touch; }
+        .ddx-active-chip { background: var(--primary-dark); color: white; padding: 4px 10px; border-radius: 12px; display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: bold; white-space: nowrap; }
+        .ddx-active-chip span { cursor: pointer; padding: 2px; }
+        
+        .ddx-results { flex-grow: 1; overflow-y: auto; padding: 16px; -webkit-overflow-scrolling: touch; background: var(--bg); }
+        .ddx-disease-card { background: var(--surface); padding: 16px; border-radius: 16px; border: 1px solid var(--divider); margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.03); }
+        .ddx-disease-title { font-size: 1.15rem; font-weight: 800; color: var(--text-main); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .ddx-score-badge { background: #fef9c3; color: #a16207; padding: 4px 8px; border-radius: 8px; font-size: 0.8rem; font-weight: 800; }
+        .ddx-feat-title { font-size: 0.85rem; color: var(--text-muted); margin-top: 10px; font-weight: 700; text-transform: uppercase; }
+        .ddx-feat-list { margin: 4px 0 0 0; padding-left: 20px; font-size: 0.95rem; color: var(--text-main); }
+        .ddx-feat-list li.matched { font-weight: 800; color: var(--primary-dark); list-style-type: '✅ ';}
 
         /* Swipeable Tasks Styling */
         .task-list-container { max-height: 40vh; overflow-x: hidden; overflow-y: auto; margin-bottom: 20px; padding-right: 5px; }
@@ -408,6 +442,13 @@
         <div class="btn-col">
             <button class="btn-secondary btn-medscape" onclick="openMedscapeAI()" style="font-size: 1.2rem; padding: 16px; text-align: left; display: flex; align-items: center; gap: 10px;">
                 <span>🩺</span> Medscape AI
+            </button>
+<button class="btn-secondary btn-ddx" onclick="openDDx()" style="font-size: 1.2rem; padding: 12px 16px; text-align: left; display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 1.5rem;">🧠</span> 
+                <div style="display: flex; flex-direction: column;">
+                    <span style="font-weight: bold;">DDx Search</span>
+                    <small style="font-size: 0.75rem; font-weight: 600; opacity: 0.8;">(Under Development)</small>
+                </div>
             </button>
             <button class="btn-secondary btn-labs" onclick="openLabValues()" style="font-size: 1.2rem; padding: 16px; text-align: left; display: flex; align-items: center; gap: 10px;">
                 <span>🔬</span> Lab Values
@@ -613,6 +654,34 @@
         <div class="lab-scroll" id="lab-values-content"></div>
     </div>
 
+<!-- DDx Full-Screen Modal -->
+    <div id="ddx-modal">
+        <div class="lab-header">
+            <button class="lab-header-close" onclick="closeDDx()">✕</button>
+            <span style="font-weight:700; font-size:1.1rem;">🧠 DDx Search</span>
+            <div style="width:38px;"></div>
+        </div>
+        
+        <div class="ddx-systems-bar" id="ddx-systems-bar"></div>
+        <div class="ddx-symptoms-panel" id="ddx-symptoms-panel"></div>
+        
+        <div class="lab-search-wrap" style="border-bottom: none; padding-bottom: 8px;">
+            <input type="text" class="lab-search" id="ddx-search-input" placeholder="🔍 Search disease name..." oninput="updateDdxResults()">
+        </div>
+        
+        <div class="ddx-active-chips" id="ddx-active-chips"></div>
+        <div class="ddx-results" id="ddx-results-content"></div>
+    </div>
+
+<!-- DDx Symptoms Floating Bottom Sheet -->
+    <div class="overlay" id="ddx-sheet-overlay" onclick="closeDdxSymptomsSheet()" style="z-index: 2001;"></div>
+    <div class="bottom-sheet" id="ddx-symptoms-sheet" style="z-index: 2002;">
+        <div class="numpad-header">
+            <h2 id="ddx-symptoms-title" style="color: var(--primary);">Symptoms</h2>
+        </div>
+        <div class="ddx-symptoms-sheet-content" id="ddx-symptoms-container"></div>
+    </div>
+
     <script>
         // =============================================
         // CORE DATA
@@ -765,6 +834,8 @@
             }
 
             if (!appData.settings.theme) appData.settings.theme = 'light';
+if (!appData.ddxSelectedSymptoms) appData.ddxSelectedSymptoms = [];
+            ddxSelectedSymptoms = appData.ddxSelectedSymptoms;
             appData.rooms.forEach(r => {
                 r.patients.forEach(p => {
                     if (!p.vitals.rbg) p.vitals.rbg = "";
@@ -1998,6 +2069,229 @@ const cycleColors = ['var(--text-main)', '#ef4444', '#22c55e', '#eab308'];
                     saveData(); renderUI(); closeModals(); showToast("Data Loaded"); scheduleAllPendingAlerts();
                 } catch (err) { showToast("Invalid file"); }
             }; reader.readAsText(file); event.target.value = '';
+        }
+
+// =============================================
+        // DDX SEARCH FEATURE (Under Development)
+        // =============================================
+        
+        const DDX_DATA = {
+            systems: [
+                { id: "git", name: "Gastrointestinal", icon: "🍏" },
+                { id: "resp", name: "Respiratory", icon: "🫁" }
+            ],
+            symptoms: {
+                git: {
+                    symptoms: ["Abdominal pain", "Nausea", "Vomiting", "Diarrhea", "Constipation", "Heartburn", "Dysphagia", "Anorexia"],
+                    signs: ["Jaundice", "Right upper quadrant tenderness", "Rebound tenderness", "McBurney's point tenderness", "Hepatomegaly"]
+                },
+                resp: {
+                    symptoms: ["Cough", "Shortness of breath", "Chest pain", "Hemoptysis"],
+                    signs: ["Wheezing", "Crackles", "Tachypnea", "Fever", "Cyanosis"]
+                }
+            },
+            diseases: [
+                {
+                    name: "Acute Appendicitis",
+                    system: "git",
+                    medscapeLink: "https://emedicine.medscape.com/article/773895-overview",
+                    keyFeatures: ["Abdominal pain", "McBurney's point tenderness", "Rebound tenderness"],
+                    possibleFeatures: ["Nausea", "Vomiting", "Fever", "Anorexia"]
+                },
+                {
+                    name: "GERD (Gastroesophageal Reflux)",
+                    system: "git",
+                    medscapeLink: "", // Leave empty if no link
+                    keyFeatures: ["Heartburn", "Dysphagia"],
+                    possibleFeatures: ["Cough", "Nausea", "Chest pain"]
+                },
+                {
+                    name: "Pneumonia",
+                    system: "resp",
+                    medscapeLink: "https://emedicine.medscape.com/article/300157-overview",
+                    keyFeatures: ["Cough", "Fever", "Crackles", "Shortness of breath"],
+                    possibleFeatures: ["Chest pain", "Tachypnea", "Hemoptysis"]
+                }
+            ]
+        };
+
+        let ddxActiveSystem = null;
+        let ddxSelectedSymptoms = [];
+
+        function openDDx() {
+            closeModals();
+            document.getElementById('ddx-search-input').value = '';
+            ddxActiveSystem = null;
+            renderDdxSystems();
+            updateDdxResults();
+            document.getElementById('ddx-modal').style.display = 'flex';
+        }
+
+        function closeDDx() {
+            document.getElementById('ddx-modal').style.display = 'none';
+            closeDdxSymptomsSheet();
+        }
+
+        function toggleDdxSystem(sysId) {
+            ddxActiveSystem = sysId;
+            renderDdxSystems(); // Highlights the button
+            
+            // Set title and render content
+            const sysName = DDX_DATA.systems.find(s => s.id === sysId).name;
+            document.getElementById('ddx-symptoms-title').innerText = sysName;
+            renderDdxSymptomsPanel(sysId);
+            
+            // Show the floating overlay and bottom sheet
+            const overlay = document.getElementById('ddx-sheet-overlay');
+            overlay.style.display = 'block';
+            setTimeout(() => overlay.style.opacity = '1', 10);
+            document.getElementById('ddx-symptoms-sheet').style.bottom = '0';
+        }
+
+        function closeDdxSymptomsSheet() {
+            document.getElementById('ddx-symptoms-sheet').style.bottom = '-100%';
+            document.getElementById('ddx-sheet-overlay').style.opacity = '0';
+            setTimeout(() => document.getElementById('ddx-sheet-overlay').style.display = 'none', 300);
+            ddxActiveSystem = null;
+            renderDdxSystems(); // Un-highlights the button
+        }
+
+        function renderDdxSymptomsPanel(sysId) {
+            const container = document.getElementById('ddx-symptoms-container');
+            const data = DDX_DATA.symptoms[sysId];
+            if (!data) return;
+
+            let html = `<div class="ddx-symp-group-title">Patient Symptoms</div>`;
+            data.symptoms.forEach(symp => {
+                const isSel = ddxSelectedSymptoms.includes(symp);
+                html += `<div class="ddx-symp-chip ${isSel ? 'selected' : ''}" onclick="toggleDdxSymptom('${symp}')">${symp}</div>`;
+            });
+
+            html += `<div class="ddx-symp-group-title" style="margin-top:15px;">Clinical Signs</div>`;
+            data.signs.forEach(sign => {
+                const isSel = ddxSelectedSymptoms.includes(sign);
+                html += `<div class="ddx-symp-chip ${isSel ? 'selected' : ''}" onclick="toggleDdxSymptom('${sign}')">${sign}</div>`;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function toggleDdxSymptom(feature) {
+            if (ddxSelectedSymptoms.includes(feature)) {
+                ddxSelectedSymptoms = ddxSelectedSymptoms.filter(f => f !== feature);
+            } else {
+                ddxSelectedSymptoms.push(feature);
+            }
+            
+            // Sync with app data and save locally!
+            appData.ddxSelectedSymptoms = ddxSelectedSymptoms;
+            saveData();
+
+            if (ddxActiveSystem) renderDdxSymptomsPanel(ddxActiveSystem);
+            updateDdxResults();
+        }
+
+        function updateDdxResults() {
+            renderDdxActiveChips();
+            const container = document.getElementById('ddx-results-content');
+            const query = document.getElementById('ddx-search-input').value.toLowerCase().trim();
+
+            if (ddxSelectedSymptoms.length === 0 && query === "") {
+                container.innerHTML = `<div class="lab-no-results">Choose some symptoms or write something to see results 🔍</div>`;
+                return;
+            }
+
+            let results = [];
+
+            DDX_DATA.diseases.forEach(disease => {
+                // 1. Text Search Filter
+                if (query && !disease.name.toLowerCase().includes(query)) return;
+
+                // 2. Symptom Cross-Matching
+                let keyMatches = disease.keyFeatures.filter(f => ddxSelectedSymptoms.includes(f));
+                let possibleMatches = disease.possibleFeatures.filter(f => ddxSelectedSymptoms.includes(f));
+                
+                // If we selected symptoms, the disease MUST match at least one to be shown
+                if (ddxSelectedSymptoms.length > 0 && keyMatches.length === 0 && possibleMatches.length === 0) return;
+
+                // Score: Key features are weighted heavier
+                let score = (keyMatches.length * 2) + possibleMatches.length;
+                
+                results.push({ ...disease, keyMatches, possibleMatches, score });
+            });
+
+            results.sort((a, b) => b.score - a.score);
+
+            if (results.length === 0) {
+                container.innerHTML = `<div class="lab-no-results">No diseases match the current criteria.</div>`;
+                return;
+            }
+
+            let html = '';
+            results.forEach(d => {
+                const totalMatches = d.keyMatches.length + d.possibleMatches.length;
+                const matchBadge = totalMatches > 0 ? `<div class="ddx-score-badge">🎯 ${totalMatches} Matches</div>` : '';
+
+                html += `<div class="ddx-disease-card">
+                    <div class="ddx-disease-title">${d.name} ${matchBadge}</div>`;
+
+                // Key Features Rendering
+                html += `<div class="ddx-feat-title">🔑 Key Features</div><ul class="ddx-feat-list">`;
+                d.keyFeatures.forEach(f => {
+                    const matched = d.keyMatches.includes(f) ? 'class="matched"' : '';
+                    html += `<li ${matched}>${f}</li>`;
+                });
+                html += `</ul>`;
+
+                // Possible Features Rendering
+                html += `<div class="ddx-feat-title">📋 Possible Features</div><ul class="ddx-feat-list">`;
+                d.possibleFeatures.forEach(f => {
+                    const matched = d.possibleMatches.includes(f) ? 'class="matched"' : '';
+                    html += `<li ${matched}>${f}</li>`;
+                });
+                html += `</ul>`;
+                
+                // Medscape Link Button (Smaller and Aligned Right)
+                if (d.medscapeLink && d.medscapeLink.trim() !== '') {
+                    html += `<div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+                                 <a href="${d.medscapeLink}" target="_blank" class="ddx-medscape-link" style="font-size: 0.75rem; padding: 5px 10px; margin-top: 0;">🔗 Read on Medscape</a>
+                             </div>`;
+                }
+                
+                html += `</div>`;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function renderDdxSystems() {
+            const bar = document.getElementById('ddx-systems-bar');
+            bar.innerHTML = '';
+            DDX_DATA.systems.forEach(sys => {
+                const btn = document.createElement('button');
+                btn.className = `ddx-sys-btn ${ddxActiveSystem === sys.id ? 'active' : ''}`;
+                btn.innerHTML = `${sys.icon} ${sys.name}`;
+                btn.onclick = () => toggleDdxSystem(sys.id);
+                bar.appendChild(btn);
+            });
+        }
+
+     
+
+    
+
+        function renderDdxActiveChips() {
+            const container = document.getElementById('ddx-active-chips');
+            if (ddxSelectedSymptoms.length === 0) {
+                container.style.display = 'none';
+                return;
+            }
+            container.style.display = 'flex';
+            let html = '';
+            ddxSelectedSymptoms.forEach(symp => {
+                html += `<div class="ddx-active-chip">${symp} <span onclick="toggleDdxSymptom('${symp}')">✕</span></div>`;
+            });
+            container.innerHTML = html;
         }
 
         // =============================================
