@@ -1023,51 +1023,67 @@
         }
 
         function renderAllTasksList() {
-            const container = document.getElementById('all-tasks-container');
-            container.innerHTML = '';
-            const now = Date.now();
+    const container = document.getElementById('all-tasks-container');
+    container.innerHTML = '';
+    const now = Date.now();
 
-            const generalPending = appData.generalTasks.filter(t => t.status === 'pending');
-            const generalCompleted = appData.generalTasks.filter(t => t.status === 'completed');
+    const generalPending = appData.generalTasks.filter(t => t.status === 'pending');
+    const generalCompleted = appData.generalTasks.filter(t => t.status === 'completed');
 
-            let patientPendingMap = new Map();
-            let patientCompletedMap = new Map();
+    let patientPendingMap = new Map();
+    let patientCompletedMap = new Map();
 
-            appData.rooms.forEach(r => r.patients.forEach(p => {
-                p.tasks.forEach(t => {
-                    if(t.status === 'pending') {
-                        if(!patientPendingMap.has(p.id)) patientPendingMap.set(p.id, {name: p.name, tasks: []});
-                        patientPendingMap.get(p.id).tasks.push(t);
-                    } else {
-                        if(!patientCompletedMap.has(p.id)) patientCompletedMap.set(p.id, {name: p.name, tasks: []});
-                        patientCompletedMap.get(p.id).tasks.push(t);
-                    }
-                });
-            }));
-
-            let hasAny = (generalPending.length + generalCompleted.length + patientPendingMap.size + patientCompletedMap.size) > 0;
-            if (hasAny) container.innerHTML = SWIPE_HINT_HTML;
-
-            if (generalPending.length > 0) {
-                container.innerHTML += `<div class="task-section-title">General Tasks (Pending)</div>`;
-                container.appendChild(buildGroupedTasksHTML('🌐 General Tasks', generalPending, now, 'general'));
+    appData.rooms.forEach(r => r.patients.forEach(p => {
+        p.tasks.forEach(t => {
+            if(t.status === 'pending') {
+                if(!patientPendingMap.has(p.id)) patientPendingMap.set(p.id, {name: p.name, tasks: []});
+                patientPendingMap.get(p.id).tasks.push(t);
+            } else {
+                if(!patientCompletedMap.has(p.id)) patientCompletedMap.set(p.id, {name: p.name, tasks: []});
+                patientCompletedMap.get(p.id).tasks.push(t);
             }
-            if (patientPendingMap.size > 0) {
-                container.innerHTML += `<div class="task-section-title">Patient Tasks (Pending)</div>`;
-                patientPendingMap.forEach((val, pId) => {
-                    container.appendChild(buildGroupedTasksHTML(`👤 ${val.name}`, val.tasks, now, pId));
-                });
-            }
-            if (generalCompleted.length > 0 || patientCompletedMap.size > 0) {
-                container.innerHTML += `<div class="task-section-title">Completed Tasks</div>`;
-                if(generalCompleted.length > 0) container.appendChild(buildGroupedTasksHTML('🌐 General Tasks', generalCompleted, now, 'general'));
-                patientCompletedMap.forEach((val, pId) => container.appendChild(buildGroupedTasksHTML(`👤 ${val.name}`, val.tasks, now, pId)));
-            }
+        });
+    }));
 
-            if (!hasAny) {
-                container.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--text-muted);">No tasks found.</div>`;
-            }
-        }
+    let hasAny = (generalPending.length + generalCompleted.length + patientPendingMap.size + patientCompletedMap.size) > 0;
+    
+    // This innerHTML is safe because it happens before we append any tasks
+    if (hasAny) container.innerHTML = SWIPE_HINT_HTML; 
+
+    if (generalPending.length > 0) {
+        let title = document.createElement('div'); 
+        title.className = 'task-section-title'; 
+        title.innerText = 'General Tasks (Pending)';
+        container.appendChild(title);
+        
+        container.appendChild(buildGroupedTasksHTML('🌐 General Tasks', generalPending, now, 'general'));
+    }
+    
+    if (patientPendingMap.size > 0) {
+        let title = document.createElement('div'); 
+        title.className = 'task-section-title'; 
+        title.innerText = 'Patient Tasks (Pending)';
+        container.appendChild(title);
+        
+        patientPendingMap.forEach((val, pId) => {
+            container.appendChild(buildGroupedTasksHTML(`👤 ${val.name}`, val.tasks, now, pId));
+        });
+    }
+    
+    if (generalCompleted.length > 0 || patientCompletedMap.size > 0) {
+        let title = document.createElement('div'); 
+        title.className = 'task-section-title'; 
+        title.innerText = 'Completed Tasks';
+        container.appendChild(title);
+        
+        if(generalCompleted.length > 0) container.appendChild(buildGroupedTasksHTML('🌐 General Tasks', generalCompleted, now, 'general'));
+        patientCompletedMap.forEach((val, pId) => container.appendChild(buildGroupedTasksHTML(`👤 ${val.name}`, val.tasks, now, pId)));
+    }
+
+    if (!hasAny) {
+        container.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--text-muted);">No tasks found.</div>`;
+    }
+}
 
         function openOverdueTasks() {
             renderOverdueTasksList();
