@@ -276,46 +276,42 @@
         input:checked + .slider { background-color: var(--primary); }
         input:checked + .slider:before { transform: translateX(24px); content: "🌙"; }
 
-        /* Notes Editor */
-        .notes-toolbar { display: flex; gap: 8px; margin-bottom: 10px; flex-shrink: 0; }
+        /* Notes Full-Screen Modal & Toolbar */
+        #notes-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg); z-index: 2000; flex-direction: column;
+        }
+        .notes-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 16px; background: var(--primary); color: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15); flex-shrink: 0;
+        }
+        .notes-header-close {
+            background: rgba(255,255,255,0.2); border: none; color: white;
+            font-size: 1.3rem; border-radius: 50%; width: 38px; height: 38px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+        .notes-toolbar {
+            display: flex; gap: 6px; padding: 10px; background: var(--surface);
+            border-bottom: 1px solid var(--divider); flex-wrap: wrap; flex-shrink: 0;
+            align-items: center; justify-content: flex-start;
+        }
         .notes-toolbar button {
-            background: var(--surface); border: 1px solid var(--divider); border-radius: 8px;
-            width: 40px; height: 40px; font-size: 1.1rem; color: var(--text-main); cursor: pointer;
+            background: var(--bg); border: 1px solid var(--divider); border-radius: 6px;
+            min-width: 36px; height: 36px; font-size: 1.1rem; color: var(--text-main);
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            font-weight: bold; padding: 0 8px;
         }
         .notes-toolbar button:active { background: var(--divider); }
-        /* Notes Editor & Floating Context Menu */
-        /* Notes Editor & Floating Context Menu */
-        /* Notes Editor & Floating Context Menu */
+        .notes-toolbar .color-btn { border-radius: 50%; width: 24px; height: 24px; min-width: 24px; border: 2px solid var(--divider); padding: 0; }
+        .notes-toolbar .divider { width: 1px; height: 24px; background: var(--divider); margin: 0 4px; }
+        
         .notes-editor {
-            flex-grow: 1; border: 2px solid var(--divider); border-radius: 12px; padding: 12px;
-            background: var(--bg); color: var(--text-main); font-size: 1.1rem; overflow-y: auto;
-            min-height: 150px; outline: none; line-height: 1.5; white-space: pre-wrap; word-break: break-word;
-            padding-bottom: 60px; /* Space for scrolling */
-            unicode-bidi: plaintext;
-            text-align: start;
+            flex-grow: 1; padding: 16px; background: var(--bg); color: var(--text-main);
+            font-size: 1.1rem; overflow-y: auto; outline: none; line-height: 1.6;
+            white-space: pre-wrap; word-break: break-word; -webkit-overflow-scrolling: touch;
         }
-        
-        /* Forces every new line/element created by hitting "Enter" to calculate its own direction */
-        .notes-editor * {
-            unicode-bidi: plaintext;
-            text-align: start;
-        }
-        .notes-editor:focus { border-color: var(--primary); }
-        .notes-editor:empty:before { content: attr(placeholder); color: var(--text-muted); pointer-events: none; display: block; }
-        
-        .format-tooltip {
-            position: fixed; background: #1e293b; color: white; padding: 6px 10px;
-            border-radius: 10px; display: none; align-items: center; gap: 8px;
-            z-index: 2100; box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-            transform: translateX(-50%); transition: opacity 0.2s;
-        }
-        .format-tooltip button {
-            background: transparent; border: none; color: white; font-size: 1.2rem;
-            cursor: pointer; padding: 4px 8px; border-radius: 6px; font-weight: bold;
-        }
-        .format-tooltip button:active { background: #334155; }
-        .format-divider { width: 1px; height: 20px; background: #475569; margin: 0 2px; }
-        .color-btn { width: 22px !important; height: 22px !important; border-radius: 50% !important; padding: 0 !important; cursor: pointer; border: 2px solid white !important; }
+        .notes-editor:empty:before { content: attr(placeholder); color: var(--text-muted); pointer-events: none; }
 
         /* Lab Modal */
         #lab-modal {
@@ -439,28 +435,27 @@
         <button class="btn-secondary" onclick="closeModals()">Close</button>
     </div>
 
-    <!-- Notes Bottom Sheet -->
-    <div class="bottom-sheet" id="notes-sheet" style="display:flex; flex-direction:column; max-height:85vh;">
-        <div class="numpad-header" style="flex-shrink:0;">
-            <h2 id="notes-title" style="color: var(--primary);">Patient Notes</h2>
-            <button style="background: #fee2e2; color: #b91c1c; border: none; padding: 6px 16px; border-radius: 8px; font-weight: bold; cursor: pointer;" onclick="clearNotes()">🗑️ Clear</button>
+    <!-- Notes Full-Screen Modal -->
+    <div id="notes-modal">
+        <div class="notes-header">
+            <button class="notes-header-close" onclick="closeNotes()">✕</button>
+            <span id="notes-title" style="font-weight:700; font-size:1.1rem;">Patient Notes</span>
+            <div style="width:38px;"></div>
         </div>
-        
-        <div id="notes-editor" class="notes-editor" contenteditable="true" placeholder="Select text to format... case notes, plans, reminders..." oninput="autoSaveNotes()"></div>
-        
-        <!-- Floating Formatting Context Menu -->
-        <!-- Floating Formatting Context Menu -->
-        <div id="format-tooltip" class="format-tooltip">
-            <!-- Formatting -->
-            <button onmousedown="event.preventDefault(); applyFormat('bold')" title="Bold">B</button>
-            <button onmousedown="event.preventDefault(); applyFormat('underline')" title="Underline"><u>U</u></button>
-            <div class="format-divider"></div>
-            <!-- Colors -->
-            <button class="color-btn" style="background: #ef4444;" onmousedown="event.preventDefault(); applyFormat('foreColor', '#ef4444')" title="Red"></button>
-            <button class="color-btn" style="background: #4ade80;" onmousedown="event.preventDefault(); applyFormat('foreColor', '#4ade80')" title="Light Green"></button>
-            <!-- Reset All Formatting -->
-            <button class="color-btn" style="background: var(--text-main);" onmousedown="event.preventDefault(); clearAllFormatting()" title="Reset Formatting">↺</button>
+        <div class="notes-toolbar">
+            <button onmousedown="event.preventDefault(); formatNote('bold')" title="Bold">B</button>
+            <button onmousedown="event.preventDefault(); formatNote('italic')" title="Italic" style="font-style: italic;">I</button>
+            <button onmousedown="event.preventDefault(); formatNote('underline')" title="Underline" style="text-decoration: underline;">U</button>
+            <button onmousedown="event.preventDefault(); formatNote('strikeThrough')" title="Strikethrough" style="text-decoration: line-through;">S</button>
+            <div class="divider"></div>
+            <button id="color-cycle-btn" class="color-btn" style="background: var(--text-main);" onmousedown="event.preventDefault(); cycleColor()" title="Cycle Color"></button>
+            <div class="divider"></div>
+            <button onmousedown="event.preventDefault(); alignText('left')" title="Align Left">⬅️</button>
+            <button onmousedown="event.preventDefault(); alignText('right')" title="Align Right">➡️</button>
+            <div class="divider" style="margin-left: auto;"></div>
+            <button onmousedown="event.preventDefault(); clearNotes()" title="Clear Notes" style="color: #b91c1c; background: #fee2e2; border: none; font-size: 1rem;">🗑️</button>
         </div>
+        <div id="notes-editor" class="notes-editor" contenteditable="true" dir="auto" placeholder="Type case notes, plans, reminders..." oninput="autoSaveNotes()"></div>
 
     <!-- Overdue Tasks Bottom Sheet -->
     <div class="bottom-sheet" id="overdue-tasks-sheet">
@@ -947,8 +942,87 @@
             const { patient } = findPatientAndRoom(patientId);
             document.getElementById('notes-title').innerText = `${patient.name} Notes`;
             document.getElementById('notes-editor').innerHTML = patient.notes || "";
-            showOverlay();
-            document.getElementById('notes-sheet').style.bottom = '0';
+            document.getElementById('notes-modal').style.display = 'flex';
+            
+            // Reset Color button
+            currentColorIndex = 0;
+            document.getElementById('color-cycle-btn').style.background = 'var(--text-main)';
+        }
+
+        function closeNotes() {
+            document.getElementById('notes-modal').style.display = 'none';
+        }
+
+        function formatNote(command, value = null) {
+            document.execCommand('styleWithCSS', false, true);
+            document.execCommand(command, false, value);
+            document.getElementById('notes-editor').focus();
+        }
+
+const cycleColors = ['var(--text-main)', '#ef4444', '#22c55e', '#eab308'];
+        let currentColorIndex = 0;
+
+        function cycleColor() {
+            currentColorIndex = (currentColorIndex + 1) % cycleColors.length;
+            const newColor = cycleColors[currentColorIndex];
+            const btn = document.getElementById('color-cycle-btn');
+
+            if (currentColorIndex === 0) {
+                formatNote('removeFormat');
+            } else {
+                formatNote('foreColor', newColor);
+            }
+            btn.style.background = newColor;
+        }
+
+        function alignText(alignDir) {
+            document.execCommand('styleWithCSS', false, true);
+            
+            // 1. Align the text visually
+            document.execCommand(alignDir === 'right' ? 'justifyRight' : 'justifyLeft', false, null);
+
+            // 2. Fix the cursor placement bug by explicitly setting the text direction
+            let node = window.getSelection().anchorNode;
+            if (node && node.nodeType === 3) node = node.parentNode; // Get parent if text node
+            
+            // Find the block element wrapping the line
+            while (node && node.id !== 'notes-editor' && window.getComputedStyle(node).display !== 'block') {
+                if(node.parentNode) node = node.parentNode;
+                else break;
+            }
+
+            if (node && node.id !== 'notes-editor') {
+                node.setAttribute('dir', alignDir === 'right' ? 'rtl' : 'ltr');
+            }
+            
+            document.getElementById('notes-editor').focus();
+        }
+
+        function autoSaveNotes() {
+            if (!editingPatientId) return;
+            const pInfo = findPatientAndRoom(editingPatientId);
+            if (pInfo && pInfo.patient) {
+                pInfo.patient.notes = document.getElementById('notes-editor').innerHTML;
+                saveData(); 
+                
+                const card = document.querySelector(`.patient-card[data-patient-id="${editingPatientId}"]`);
+                if (card) {
+                    const noteBtn = Array.from(card.querySelectorAll('button')).find(btn => btn.title === 'Notes' || btn.innerText.includes('📝'));
+                    const hasNotes = pInfo.patient.notes && pInfo.patient.notes.trim() !== '' && pInfo.patient.notes !== '<br>';
+                    if (noteBtn) {
+                        if (hasNotes) noteBtn.classList.add('has-notes');
+                        else noteBtn.classList.remove('has-notes');
+                    }
+                }
+            }
+        }
+
+        function clearNotes() {
+            if (confirm("Delete all notes for this patient?")) {
+                document.getElementById('notes-editor').innerHTML = "";
+                autoSaveNotes(); 
+                showToast("Notes deleted 🗑️");
+            }
         }
 
         
@@ -973,15 +1047,7 @@
             }
         }
 
-        function clearNotes() {
-            if (confirm("Delete all notes for this patient?")) {
-                document.getElementById('notes-editor').innerHTML = "";
-                autoSaveNotes(); // Triggers the auto-save to clear it from memory
-                showToast("Notes deleted 🗑️");
-                closeModals();
-            }
-        }
-
+        
         // =============================================
         // TASKS SYSTEM & SWIPING
         // =============================================
@@ -1334,7 +1400,7 @@
             document.getElementById('numpad-sheet').style.bottom = '-100%';
             document.getElementById('patient-menu-sheet').style.bottom = '-100%';
             document.getElementById('room-menu-sheet').style.bottom = '-100%';
-            document.getElementById('notes-sheet').style.bottom = '-100%';
+            document.getElementById('notes-modal').style.display = 'none';
             document.getElementById('all-tasks-sheet').style.bottom = '-100%';
             document.getElementById('overdue-tasks-sheet').style.bottom = '-100%';
             activeRoomId = null;
@@ -1933,81 +1999,6 @@
                 } catch (err) { showToast("Invalid file"); }
             }; reader.readAsText(file); event.target.value = '';
         }
-
-// =============================================
-        // NOTES FLOATING CONTEXT MENU
-        // =============================================
-        const editorEl = document.getElementById('notes-editor');
-        const formatTooltip = document.getElementById('format-tooltip');
-
-        function checkTextSelection() {
-            setTimeout(() => { // small delay for mobile touch event settling
-                const selection = window.getSelection();
-                if (selection.rangeCount > 0 && !selection.isCollapsed && editorEl.contains(selection.anchorNode)) {
-                    const range = selection.getRangeAt(0);
-                    const rect = range.getBoundingClientRect();
-                    
-                    formatTooltip.style.display = 'flex';
-                    
-                    // Center horizontally
-                    let leftPos = rect.left + (rect.width / 2);
-                    // Prevent tooltip from overflowing screen edges horizontally
-                    if (leftPos < 100) leftPos = 100;
-                    if (leftPos > window.innerWidth - 100) leftPos = window.innerWidth - 100;
-                    
-                    // Position BELOW the text (to avoid native mobile menu overlapping)
-                    let topPos = rect.bottom + 15; 
-                    
-                    // Fallback to top if there isn't enough space at the bottom of the screen
-                    if (topPos + 50 > window.innerHeight) {
-                        topPos = rect.top - 50; 
-                    }
-                    
-                    formatTooltip.style.left = leftPos + 'px';
-                    formatTooltip.style.top = topPos + 'px'; 
-                } else {
-                    formatTooltip.style.display = 'none';
-                }
-            }, 50);
-        }
-
-        function applyFormat(command, value = null) {
-            // This forces the browser to use modern CSS styling instead of legacy HTML tags.
-            // This fixes the bug where the underline is a different color than the text!
-            document.execCommand('styleWithCSS', false, true);
-            
-            document.execCommand(command, false, value);
-            editorEl.focus();
-            checkTextSelection();
-        }
-
-        function clearAllFormatting() {
-            // Removes Bold, Underline, etc.
-            document.execCommand('removeFormat', false, null);
-            
-            // Cleans up any lingering color styles
-            document.execCommand('styleWithCSS', false, false);
-            document.execCommand('foreColor', false, '');
-            
-            editorEl.focus();
-            checkTextSelection();
-        }
-
-        // Attach listeners for selection events
-        ['mouseup', 'keyup', 'touchend'].forEach(evt => {
-            editorEl.addEventListener(evt, checkTextSelection);
-        });
-
-        // Hide tooltip if typing normally or scrolling
-        editorEl.addEventListener('input', () => formatTooltip.style.display = 'none');
-        editorEl.addEventListener('scroll', () => formatTooltip.style.display = 'none');
-        
-        // Hide if clicking elsewhere
-        document.addEventListener('mousedown', (e) => {
-            if (!formatTooltip.contains(e.target) && !editorEl.contains(e.target)) {
-                formatTooltip.style.display = 'none';
-            }
-        });
 
         // =============================================
         // DELETE ALL TASKS LOGIC
