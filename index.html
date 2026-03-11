@@ -2991,24 +2991,25 @@ function closeDdxSymptomsModal() {
 // SERVICE WORKER REGISTRATION & AUTO-UPDATE
 // =============================================
 if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').then(reg => {
-            // Check for updates on a loop (every 30 mins)
-            setInterval(() => { reg.update(); }, 1000 * 60 * 30);
-        }).catch(err => console.error("SW Register Error:", err));
-    });
 
-    // Handle the actual controller change (the reload)
-    let refreshing = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (!refreshing) {
-            refreshing = true;
-            // Show the toast and delay the reload here instead!
+    // Remember if a SW was already controlling this page (= not first install)
+    const hadController = !!navigator.serviceWorker.controller;
+
+    // Listen for the message FROM the service worker
+    navigator.serviceWorker.addEventListener('message', event => {
+        if (event.data?.type === 'SW_UPDATED' && hadController) {
             showToast("Updating MiriMate... 🔄");
             setTimeout(() => {
                 window.location.reload();
             }, 1500);
         }
+    });
+
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').then(reg => {
+            // Check for updates every 30 mins
+            setInterval(() => { reg.update(); }, 1000 * 60 * 30);
+        }).catch(err => console.error("SW Register Error:", err));
     });
 }
 
