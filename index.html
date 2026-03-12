@@ -685,7 +685,6 @@
         <button class="btn-secondary" style="margin-top: 15px; border:none; background:transparent;" onclick="closeModals()">Close</button>
     </div>
 
-    <!-- Bottom Sheet Numpad Modal -->
     <div class="bottom-sheet" id="numpad-sheet">
         <div class="numpad-header">
             <h2 id="numpad-title">Enter Vital</h2>
@@ -697,10 +696,19 @@
                 <span id="btn-temp-plus" class="numpad-action-btn" onclick="adjustTemp(1)">+0.5</span>
             </div>
         </div>
+        
         <div class="numpad-display-container">
-            <div class="numpad-display" id="numpad-display"></div>
+            <div class="numpad-display" id="numpad-display" style="display: flex; justify-content: center; align-items: center; gap: 2px;">
+                <span id="numpad-val-main" onclick="setBpFocus('sys')" style="padding: 0 10px; border-radius: 8px; cursor: pointer; min-height: 45px; display: inline-flex; align-items: center;"></span>
+                <span id="numpad-bp-slash" style="display: none; color: var(--text-muted); padding: 0 5px;">/</span>
+                <span id="numpad-val-dia" onclick="setBpFocus('dia')" style="display: none; padding: 0 10px; border-radius: 8px; cursor: pointer; min-height: 45px; display: inline-flex; align-items: center;"></span>
+            </div>
             <button class="numpad-del" onclick="numpadDel()">⌫</button>
         </div>
+        
+        <!-- NEW TREND LINE CONTAINER -->
+        <div id="numpad-trend-line" style="text-align: center; font-size: 0.85rem; margin-top: -15px; margin-bottom: 15px; display: flex; justify-content: center; align-items: center; gap: 6px; font-weight: 600; flex-wrap: nowrap; overflow: hidden; white-space: nowrap;"></div>
+
         <div class="numpad-grid">
             <button class="numpad-btn" onclick="numpadPress('1')">1</button>
             <button class="numpad-btn" onclick="numpadPress('2')">2</button>
@@ -713,8 +721,8 @@
             <button class="numpad-btn" onclick="numpadPress('9')">9</button>
             <button class="numpad-btn action" onclick="numpadPress('.')">•</button>
             <button class="numpad-btn" onclick="numpadPress('0')">0</button>
-            <button class="numpad-btn action" onclick="numpadPress('/')">/</button>
-            <button class="numpad-btn submit" onclick="numpadSubmit()">✓ Save</button>
+            <!-- Updated Submit Button to fit the 3x4 grid -->
+            <button class="numpad-btn submit" style="grid-column: span 1; margin-top: 0; font-size: 1.8rem;" onclick="numpadSubmit()">✓</button>
         </div>
     </div>
 
@@ -734,9 +742,23 @@
             <!-- ========================================== -->
             <!-- ⬇️ MSarhan ADD OR REMOVE NEWS HTML CARDS HERE ⬇️ -->
             <!-- ========================================== -->
-            
+            <!-- New Update Card (March 12) -->
             <div style="background: var(--surface); border: 1px solid var(--divider); border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.04);">
-                <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">March 2026</div>
+                <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">12 March 2026</div>
+                <div style="font-size: 1.25rem; font-weight: 800; color: var(--primary-dark); margin-bottom: 12px;">Trends & Fixes 📈</div>           
+
+                <div style="font-size: 1.05rem; color: var(--text-main); line-height: 1.5;">
+                    <ul style="margin: 0; padding-left: 20px; margin-bottom: 14px; color: var(--text-muted);">
+                        <li style="margin-bottom: 6px;"><strong>Vitals Trend Line:</strong> See previous entries instantly inside the numpad! ⬆️⬇️
+                        <li><strong>BP Updates:</strong> Smoother, auto-shifting blood pressure inputs with bug fixes 🩸.</li>
+                    </ul>
+                    <div style="font-size: 0.9rem; background: var(--bg); padding: 10px; border-radius: 10px; border: 1px dashed var(--primary); text-align: center; color: var(--primary-dark); font-weight: 600;">
+                        🙌 Special thanks to <strong>Dada</strong>, <strong>Bolbol</strong> & <strong>Doola</strong> for the support!
+                    </div>
+                </div>
+            </div>
+            <div style="background: var(--surface); border: 1px solid var(--divider); border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.04);">
+                <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">10 March 2026</div>
                 <div style="font-size: 1.25rem; font-weight: 800; color: var(--primary-dark); margin-bottom: 10px;">Welcome to MiriMate Beta! 🎉</div>
                 <div style="font-size: 1.05rem; color: var(--text-main); line-height: 1.5;">
                     Thanks for using MiriMate. We just added swipeable tasks, floating timers, and an extensive Lab Values reference sheet! Stay tuned for more updates.
@@ -835,7 +857,7 @@
         // =============================================
 
 // 🟢 MSarhan INCREASE THIS NUMBER WHENEVER YOU ADD NEW NEWS HTML CARDS!
-        const LATEST_NEWS_INDEX = 1;
+        const LATEST_NEWS_INDEX = 2;
 
 
         let appData = {
@@ -2008,12 +2030,44 @@ function toggleRoomCollapse(roomId) {
         // =============================================
         // NUMPAD & BP VALIDATION
         // =============================================
+        // =============================================
+        // NUMPAD & BP VALIDATION & TRENDS
+        // =============================================
+        let bpActiveField = 'sys';
+
+        function setBpFocus(field) {
+            if (activeVitalInfo.vitalKey !== 'bp') return;
+            bpActiveField = field;
+            document.getElementById('numpad-val-main').style.backgroundColor = field === 'sys' ? 'var(--divider)' : 'transparent';
+            document.getElementById('numpad-val-dia').style.backgroundColor = field === 'dia' ? 'var(--divider)' : 'transparent';
+        }
+
         function openNumpad(patientId, vitalKey) {
             activeVitalInfo = { patientId, vitalKey };
             const { patient } = findPatientAndRoom(patientId);
             let displayNames = { hr: "Heart Rate", bp: "Blood Pressure", temp: "Temperature", spo2: "SpO2 Level", rr: "Resp Rate", rbg: "Random BG (mg/dL)" };
             document.getElementById('numpad-title').innerText = displayNames[vitalKey];
-            document.getElementById('numpad-display').innerText = patient.vitals[vitalKey] || "";
+            
+            const mainSpan = document.getElementById('numpad-val-main');
+            const diaSpan = document.getElementById('numpad-val-dia');
+            const slashSpan = document.getElementById('numpad-bp-slash');
+            
+            // Always start empty when opening
+            if (vitalKey === 'bp') {
+                slashSpan.style.display = 'inline';
+                diaSpan.style.display = 'inline';
+                mainSpan.innerText = "";
+                diaSpan.innerText = "";
+                setBpFocus('sys'); 
+            } else {
+                slashSpan.style.display = 'none';
+                diaSpan.style.display = 'none';
+                mainSpan.innerText = "";
+                mainSpan.style.backgroundColor = 'transparent';
+                bpActiveField = 'sys';
+            }
+
+            renderTrendLine(patient, vitalKey);
 
             const btnHrX2 = document.getElementById('btn-hr-x2'); const btnHrX4 = document.getElementById('btn-hr-x4');
             const btnHrDiv3 = document.getElementById('btn-hr-div3'); const tempPlusBtn = document.getElementById('btn-temp-plus');
@@ -2030,30 +2084,121 @@ function toggleRoomCollapse(roomId) {
             showOverlay(); document.getElementById('numpad-sheet').style.bottom = '0';
         }
 
-        function numpadPress(char) { document.getElementById('numpad-display').innerText += char; }
-        function numpadDel() { const d = document.getElementById('numpad-display'); d.innerText = d.innerText.slice(0, -1); }
+        function numpadPress(char) { 
+            const mainSpan = document.getElementById('numpad-val-main');
+            const diaSpan = document.getElementById('numpad-val-dia');
+            
+            if (activeVitalInfo.vitalKey === 'bp') {
+                if (bpActiveField === 'sys') {
+                    if (mainSpan.innerText.length < 3) {
+                        mainSpan.innerText += char;
+                        if (mainSpan.innerText.length === 3) setBpFocus('dia');
+                    }
+                } else {
+                    if (diaSpan.innerText.length < 3) diaSpan.innerText += char;
+                }
+            } else {
+                mainSpan.innerText += char;
+            }
+        }
+
+        function numpadDel() { 
+            const mainSpan = document.getElementById('numpad-val-main');
+            const diaSpan = document.getElementById('numpad-val-dia');
+            
+            if (activeVitalInfo.vitalKey === 'bp') {
+                if (bpActiveField === 'dia') {
+                    if (diaSpan.innerText.length > 0) diaSpan.innerText = diaSpan.innerText.slice(0, -1);
+                    else setBpFocus('sys'); // Jump back to systolic if empty
+                } else {
+                    mainSpan.innerText = mainSpan.innerText.slice(0, -1);
+                }
+            } else {
+                mainSpan.innerText = mainSpan.innerText.slice(0, -1);
+            }
+        }
+
         function applyMath(operation) {
-            const d = document.getElementById('numpad-display'); let val = parseFloat(d.innerText);
+            const mainSpan = document.getElementById('numpad-val-main');
+            let val = parseFloat(mainSpan.innerText);
             if (isNaN(val)) return;
             if (operation === 'x2') val *= 2; else if (operation === 'x4') val *= 4; else if (operation === '/3') val /= 3;
-            d.innerText = Math.round(val).toString();
+            mainSpan.innerText = Math.round(val).toString();
         }
+
         function adjustTemp(sign) {
-            const d = document.getElementById('numpad-display'); let val = parseFloat(d.innerText);
+            const mainSpan = document.getElementById('numpad-val-main');
+            let val = parseFloat(mainSpan.innerText);
             if (isNaN(val)) return;
-            const diff = appData.settings.tempUnit === 'F' ? 0.9 : 0.5; val += diff * sign; d.innerText = val.toFixed(1);
+            const diff = appData.settings.tempUnit === 'F' ? 0.9 : 0.5; val += diff * sign; mainSpan.innerText = val.toFixed(1);
         }
-        function numpadSubmit() {
-            const val = document.getElementById('numpad-display').innerText.trim();
+
+        function renderTrendLine(patient, vitalKey) {
+            const trendContainer = document.getElementById('numpad-trend-line');
+            trendContainer.innerHTML = '';
             
-            // Blood Pressure Validation
-            if (activeVitalInfo.vitalKey === 'bp' && val !== "" && !val.includes('/')) {
-                showToast("BP must contain '/' (e.g., 120/80)");
-                return; // Prevent saving
+            if (!patient.vitalHistory || !patient.vitalHistory[vitalKey] || patient.vitalHistory[vitalKey].length === 0) {
+                trendContainer.innerText = "No previous entries logged";
+                trendContainer.style.color = "var(--text-muted)";
+                return;
+            }
+            
+            trendContainer.style.color = "inherit";
+            let history = patient.vitalHistory[vitalKey];
+            
+            // Add the "TREND" label in primary green
+            let html = `<span style="color: var(--primary); font-weight: 800; margin-right: 4px; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px;">TREND</span>`;
+            
+            for (let i = 0; i < history.length; i++) {
+                let val = history[i];
+                let isAbnormal = isVitalOutOfRange(vitalKey, val, appData.settings.tempUnit);
+                
+                let bgColor = appData.settings.theme === 'dark' ? (isAbnormal ? '#450a0a' : '#064e3b') : (isAbnormal ? '#fee2e2' : '#dcfce7');
+                let textColor = appData.settings.theme === 'dark' ? (isAbnormal ? '#fca5a5' : '#6ee7b7') : (isAbnormal ? '#991b1b' : '#166534');
+
+                let arrow = '';
+                if (i > 0) {
+                    let prevVal = parseFloat(history[i-1].split('/')[0]);
+                    let currVal = parseFloat(val.split('/')[0]);
+                    if (currVal > prevVal) arrow = '↑ ';
+                    else if (currVal < prevVal) arrow = '↓ ';
+                }
+
+                html += `<span style="background: ${bgColor}; color: ${textColor}; padding: 3px 8px; border-radius: 8px; font-size: 0.8rem; border: 1px solid ${textColor}40;">${arrow}${val}</span>`;
+                if (i < history.length - 1) html += `<span style="color: var(--text-muted); opacity: 0.6;">→</span>`;
+            }
+            trendContainer.innerHTML = html;
+        }
+
+        function numpadSubmit() {
+            const mainSpan = document.getElementById('numpad-val-main').innerText.trim();
+            const diaSpan = document.getElementById('numpad-val-dia').innerText.trim();
+            
+            let val = mainSpan;
+            if (activeVitalInfo.vitalKey === 'bp') {
+                if (mainSpan === "" && diaSpan === "") val = "";
+                else val = `${mainSpan}/${diaSpan}`;
+            }
+
+            if (activeVitalInfo.vitalKey === 'bp' && val !== "" && (!mainSpan || !diaSpan)) {
+                return showToast("Please enter both systolic and diastolic BP");
             }
 
             const { patient } = findPatientAndRoom(activeVitalInfo.patientId);
+            let oldVal = patient.vitals[activeVitalInfo.vitalKey] || "";
             patient.vitals[activeVitalInfo.vitalKey] = val;
+            
+            // Log to History if the value actually changed (avoids duplicates from accidental saves)
+            if (val !== "" && val !== oldVal) {
+                if (!patient.vitalHistory) patient.vitalHistory = {};
+                if (!patient.vitalHistory[activeVitalInfo.vitalKey]) patient.vitalHistory[activeVitalInfo.vitalKey] = [];
+                
+                patient.vitalHistory[activeVitalInfo.vitalKey].push(val);
+                if (patient.vitalHistory[activeVitalInfo.vitalKey].length > 3) {
+                    patient.vitalHistory[activeVitalInfo.vitalKey].shift(); // Keep only last 3
+                }
+            }
+
             saveData(); renderUI(); closeModals();
         }
 
