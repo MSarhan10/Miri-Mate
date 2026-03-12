@@ -437,11 +437,36 @@
         .fab-add:active { transform: scale(0.9); }
 
         #toast {
-            visibility: hidden; min-width: 250px; background-color: #334155; color: #fff; text-align: center; border-radius: 50px; padding: 12px 24px; position: fixed; z-index: 2000; left: 50%; bottom: 30px; transform: translateX(-50%); font-size: 1.1rem; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-        }
-        #toast.show { visibility: visible; animation: fadein 0.3s, fadeout 0.3s 2.5s; }
-        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
-        @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+    visibility: hidden;
+    min-width: 250px;
+    background-color: #334155;
+    color: #fff;
+    text-align: center;
+    border-radius: 50px;
+    padding: 12px 24px;
+    position: fixed;
+    z-index: 2000;
+    left: 50%;
+    bottom: 30px;
+    transform: translateX(-50%);
+    font-size: 1.1rem;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    opacity: 0;
+    /* We don't animate visibility here, just opacity and position */
+}
+
+#toast.show {
+    visibility: visible;
+    animation: fade-in-out 2.5s forwards; /* 3 seconds total: 0.3 in, 2.4 wait, 0.3 out */
+}
+
+@keyframes fade-in-out {
+    0% { bottom: 0; opacity: 0; }
+    10% { bottom: 30px; opacity: 1; }  /* Fade in & slide up */
+    90% { bottom: 30px; opacity: 1; }  /* Stay visible */
+    100% { bottom: 0; opacity: 0; }    /* Fade out & slide down */
+}
 
     </style>
 </head>
@@ -654,6 +679,7 @@
                 <button class="btn-secondary" onclick="exportJSON()">💾 Download Data</button>
                 <input type="file" id="import-file" style="display: none;" accept=".json,.txt" onchange="importJSON(event)">
                 <button class="btn-secondary" onclick="document.getElementById('import-file').click()">📂 Load Data</button>
+                <button class="btn-danger" onclick="resetEntireApp()" style="margin-top: 15px;">🔄 Reset App Data</button>
             </div>
         </div>
         <button class="btn-secondary" style="margin-top: 15px; border:none; background:transparent;" onclick="closeModals()">Close</button>
@@ -746,8 +772,16 @@
             </div>
             <div style="margin-bottom: 15px;">
                 <div style="font-weight: 800; color: var(--primary); font-size: 1.05rem; margin-bottom: 5px;">🛠️ Advanced Tools</div>
-                <div style="font-size: 0.9rem; color: var(--text-main); line-height: 1.4;">Helpful tools accessed through the Toolbox: <br><b>🩺  Medscape AI:</b> Quick medical AI search.<br><b>🧠  DDx Search:</b> Find differential diagnoses based on selected symptoms and labs.<br><b>🔬  Lab Values:</b> A comprehensive clinical reference sheet.</div>
-            </div>
+                <div style="font-size: 0.9rem; color: var(--text-main); line-height: 1.4;">
+  Helpful tools accessed through the Toolbox:
+  <div style="padding-left: 5px;">
+    🩺<b> Medscape AI:</b> Quick medical AI search.<br>
+    🧠<b> DDx Search:</b> Find differential diagnoses based on selected symptoms and labs.<br>
+    🔬<b> Lab Values:</b> A comprehensive clinical reference sheet.
+  </div>
+</div>
+</div>
+
 </div>
     </div>
     
@@ -2321,6 +2355,27 @@ function toggleRoomCollapse(roomId) {
             }; reader.readAsText(file); event.target.value = '';
         }
 
+function resetEntireApp() {
+            if (confirm("⚠️ WARNING: This will permanently delete ALL rooms, patients, tasks, and settings! Are you sure you want to reset the app?")) {
+                
+                // 1. Cancel all active timers so they don't ring after deletion
+                appData.tasks.forEach(t => cancelLocalAlert(t.id));
+                
+                // 2. Wipe the data
+                appData.rooms = [{ id: 'r1', name: 'Room 1', patients: [], collapsed: false }];
+                appData.tasks = [];
+                appData.notifiedTaskIds = [];
+                appData.ddxSelectedSymptoms = [];
+                ddxSelectedSymptoms = [];
+                
+                // 3. Save, update UI, and close menus
+                saveData();
+                renderUI();
+                closeModals();
+                showToast("App data has been reset 🗑️");
+            }
+        }
+
 // =============================================
         // DDX SEARCH FEATURE (Under Development)
         // =============================================
@@ -3197,9 +3252,18 @@ function closeDdxSymptomsModal() {
         }
 
         function showToast(msg) {
-            const toast = document.getElementById("toast"); toast.innerText = msg; toast.className = "show";
-            setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
-        }
+    const toast = document.getElementById("toast");
+    toast.innerText = msg;
+    
+    // Reset animation by removing the class
+    toast.classList.remove("show");
+    
+    // Force a reflow (this is the "secret sauce" to restart CSS animations)
+    void toast.offsetWidth; 
+    
+    // Add the class back
+    toast.classList.add("show");
+}
 
 // =============================================
 // SERVICE WORKER REGISTRATION & AUTO-UPDATE
