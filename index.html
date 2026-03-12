@@ -949,10 +949,11 @@ if (!appData.ddxSelectedSymptoms) appData.ddxSelectedSymptoms = [];
                         <div class="room-title">${room.name}</div>
                         <div class="room-actions">
                             <button class="btn-add" onclick="openNameModal('${room.id}')">+ Patient</button>
+                            <button onclick="toggleRoomCollapse('${room.id}')" title="Toggle Collapse" style="padding: 4px 10px; color: var(--text-main); font-size: 1.1rem;">${room.collapsed ? '⬇️' : '⬆️'}</button>
                             <button class="btn-menu" onclick="openRoomMenu('${room.id}')" title="Room Options">⋮</button>
                         </div>
                     </div>
-                    <div class="room-content" data-room-id="${room.id}"></div>
+                    <div class="room-content" data-room-id="${room.id}" style="display: ${room.collapsed ? 'none' : 'block'};"></div>
                 `;
                 const contentEl = roomEl.querySelector('.room-content');
                 room.patients.forEach(p => contentEl.appendChild(createPatientCard(p)));
@@ -1582,6 +1583,16 @@ const cycleColors = ['var(--text-main)', '#ef4444', '#22c55e', '#eab308'];
         // =============================================
         // ROOMS & PATIENT OPTIONS
         // =============================================
+
+function toggleRoomCollapse(roomId) {
+            const room = appData.rooms.find(r => r.id === roomId);
+            if (room) {
+                room.collapsed = !room.collapsed;
+                saveData(); // Saves the open/closed state to local storage
+                renderUI(); // Refreshes the UI to show the change
+            }
+        }
+
         function openRoomMenu(roomId) {
             activeRoomId = roomId;
             const room = appData.rooms.find(r => r.id === roomId);
@@ -1608,7 +1619,7 @@ const cycleColors = ['var(--text-main)', '#ef4444', '#22c55e', '#eab308'];
             const name = document.getElementById('room-name-input').value.trim();
             if (!name) return showToast("Room name required");
             if (activeRoomId) appData.rooms.find(r => r.id === activeRoomId).name = name;
-            else appData.rooms.push({ id: 'r' + Date.now(), name: name, patients: [] });
+            else appData.rooms.push({ id: 'r' + Date.now(), name: name, patients: [], collapsed: false });
             saveData(); renderUI(); closeModals();
         }
         function deleteRoomFromMenu() {
@@ -1734,6 +1745,10 @@ const cycleColors = ['var(--text-main)', '#ef4444', '#22c55e', '#eab308'];
             const target = document.elementFromPoint(x, y);
             if (target) {
                 const targetCard = target.closest('.patient-card'); const targetRoom = target.closest('.room-content');
+                
+                // Safety check: Prevent interacting with a closed room
+                if (targetRoom && targetRoom.style.display === 'none') return; 
+
                 if (targetCard && targetCard !== dragEl) {
                     const rect = targetCard.getBoundingClientRect(); const mid = rect.top + rect.height / 2;
                     if (y < mid) targetCard.parentNode.insertBefore(dragEl, targetCard);
@@ -1761,7 +1776,8 @@ const cycleColors = ['var(--text-main)', '#ef4444', '#22c55e', '#eab308'];
                     const { patient } = findPatientAndRoom(parseInt(card.dataset.patientId));
                     if (patient) newPatients.push(patient);
                 });
-                newRooms.push({ id: roomId, name: originalRoom.name, patients: newPatients });
+                // Use spread operator (...originalRoom) to keep the collapsed state and any other properties
+                newRooms.push({ ...originalRoom, patients: newPatients });
             });
             appData.rooms = newRooms; saveData(); renderUI();
         }
