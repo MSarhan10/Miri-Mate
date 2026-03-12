@@ -696,8 +696,11 @@
     <div id="news-modal">
         <div class="lab-header">
             <button class="lab-header-close" onclick="closeNewsModal()">✕</button>
-            <span style="font-weight:700; font-size:1.1rem;">📰 News & Updates</span>
-            <div style="width:38px;"></div> <!-- Empty div for flexbox centering -->
+            <span style="font-weight:700; font-size:1.1rem;">📰 News</span>
+            <div style="display: flex; gap: 8px;">
+                <button class="lab-header-close" onclick="openHowToUse()" title="How to Use">❔</button>
+                <button class="lab-header-close" onclick="openSocials()" title="Socials">🌐</button>
+            </div>
         </div>
         
         <div style="flex-grow: 1; overflow-y: auto; padding: 16px; -webkit-overflow-scrolling: touch; background: var(--bg);">
@@ -717,19 +720,11 @@
             <!-- ========================================== -->
             <!-- ⬆️ END OF NEWS CARDS ⬆️ -->
             <!-- ========================================== -->
-            
-            <!-- Bottom Buttons -->
-            <div class="btn-col" style="margin-top: 24px;">
-                <button class="btn-secondary" onclick="openHowToUse()" style="padding: 14px; font-size: 1.1rem; display: flex; justify-content: center; align-items: center; gap: 10px;">
-                    <span>📖</span> How to Use
-                </button>
-                <button class="btn-secondary" onclick="openSocials()" style="padding: 14px; font-size: 1.1rem; display: flex; justify-content: center; align-items: center; gap: 10px;">
-                    <span>🌐</span> Socials
-                </button>
-            </div>
+                    
         </div>
     </div>
 <!-- How to Use Modal -->
+    <div class="overlay" id="htu-overlay" onclick="closeHowToUse()" style="z-index: 2004;"></div>
     <div class="center-modal" id="htu-modal" style="width: 90%; max-width: 450px; padding: 20px; z-index: 2005;">
         <h2 style="color: var(--primary); margin-top: 0; margin-bottom: 15px;">📖 How to Use</h2>
         <div style="max-height: 55vh; overflow-y: auto; padding-right: 5px;">
@@ -754,7 +749,6 @@
                 <div style="font-size: 0.9rem; color: var(--text-main); line-height: 1.4;">Helpful tools accessed through the Toolbox: <br><b>🩺  Medscape AI:</b> Quick medical AI search.<br><b>🧠  DDx Search:</b> Find differential diagnoses based on selected symptoms and labs.<br><b>🔬  Lab Values:</b> A comprehensive clinical reference sheet.</div>
             </div>
 </div>
-        <button class="btn-main" style="margin-top: 15px; width: 100%; padding: 12px;" onclick="closeHowToUse()">Got it!</button>
     </div>
     
     <div id="toast">Message</div>
@@ -1645,8 +1639,7 @@ function checkNewsBadge() {
         }
 
         function openHowToUse() {
-            // Use existing high z-index overlay to dim the screen behind the menu
-            const overlay = document.getElementById('ddx-sheet-overlay');
+            const overlay = document.getElementById('htu-overlay');
             overlay.style.display = 'block';
             setTimeout(() => overlay.style.opacity = '1', 10);
 
@@ -1661,7 +1654,7 @@ function checkNewsBadge() {
             modal.style.transform = 'translate(-50%, -50%) scale(0.9)';
             setTimeout(() => modal.style.display = 'none', 300);
 
-            const overlay = document.getElementById('ddx-sheet-overlay');
+            const overlay = document.getElementById('htu-overlay');
             overlay.style.opacity = '0';
             setTimeout(() => overlay.style.display = 'none', 300);
         }
