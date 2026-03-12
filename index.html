@@ -1934,6 +1934,70 @@ function toggleRoomCollapse(roomId) {
             }
             saveData(); renderUI(); closeModals();
         }
+        function adjustTemp(sign) {
+            const mainSpan = document.getElementById('numpad-val-main');
+            let val = parseFloat(mainSpan.innerText);
+            if (isNaN(val)) return;
+            const diff = appData.settings.tempUnit === 'F' ? 0.9 : 0.5; val += diff * sign; mainSpan.innerText = val.toFixed(1);
+        }
+
+        // --- NEW TREND LINE FUNCTIONS START HERE ---
+        function renderTrendLine(patient, vitalKey) {
+            const trendContainer = document.getElementById('numpad-trend-line');
+            trendContainer.innerHTML = '';
+            
+            if (!patient.vitalHistory || !patient.vitalHistory[vitalKey] || patient.vitalHistory[vitalKey].length === 0) {
+                trendContainer.innerText = "No previous entries logged";
+                trendContainer.style.color = "var(--text-muted)";
+                return;
+            }
+            
+            trendContainer.style.color = "inherit";
+            let history = patient.vitalHistory[vitalKey];
+            
+            // Add the "TREND" label in primary green
+            let html = `<span style="color: var(--primary); font-weight: 800; margin-right: 4px; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; flex-shrink: 0;">TREND</span>`;
+            
+            for (let i = 0; i < history.length; i++) {
+                let val = history[i];
+                let isAbnormal = isVitalOutOfRange(vitalKey, val, appData.settings.tempUnit);
+                
+                let bgColor = appData.settings.theme === 'dark' ? (isAbnormal ? '#450a0a' : '#064e3b') : (isAbnormal ? '#fee2e2' : '#dcfce7');
+                let textColor = appData.settings.theme === 'dark' ? (isAbnormal ? '#fca5a5' : '#6ee7b7') : (isAbnormal ? '#991b1b' : '#166534');
+
+                let arrow = '';
+                if (i > 0) {
+                    let prevVal = parseFloat(history[i-1].split('/')[0]);
+                    let currVal = parseFloat(val.split('/')[0]);
+                    if (currVal > prevVal) arrow = '↑ ';
+                    else if (currVal < prevVal) arrow = '↓ ';
+                }
+
+                html += `<span style="background: ${bgColor}; color: ${textColor}; padding: 3px 8px; border-radius: 8px; font-size: 0.8rem; border: 1px solid ${textColor}40;">${arrow}${val}</span>`;
+                if (i < history.length - 1) html += `<span style="color: var(--text-muted); opacity: 0.6; flex-shrink: 0;">→</span>`;
+            }
+            
+            // Add the Reset Trend Button at the end
+            html += `<span onclick="resetSpecificVitalTrend()" title="Clear Trend" style="margin-left: 4px; cursor: pointer; color: var(--text-muted); font-size: 1rem; font-weight:bold; background: var(--surface); border: 1px solid var(--divider); border-radius: 50%; min-width: 24px; height: 24px; display: inline-flex; justify-content: center; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); flex-shrink: 0;">↺</span>`;
+
+            trendContainer.innerHTML = html;
+        }
+
+        // Clears the trend for the specific vital currently open
+        function resetSpecificVitalTrend() {
+            if (!activeVitalInfo || !activeVitalInfo.patientId) return;
+            const { patient } = findPatientAndRoom(activeVitalInfo.patientId);
+            if (patient && patient.vitalHistory && patient.vitalHistory[activeVitalInfo.vitalKey]) {
+                if(confirm("Clear the trend history for this vital?")) {
+                    patient.vitalHistory[activeVitalInfo.vitalKey] = [];
+                    saveData();
+                    renderTrendLine(patient, activeVitalInfo.vitalKey);
+                    showToast("Trend cleared");
+                }
+            }
+        }
+        // --- NEW TREND LINE FUNCTIONS END HERE ---
+
         function resetPatientVitalsFromMenu() {
             if (confirm("Clear all vitals for this patient?")) {
                 const { patient } = findPatientAndRoom(editingPatientId);
@@ -2126,49 +2190,14 @@ function toggleRoomCollapse(roomId) {
             mainSpan.innerText = Math.round(val).toString();
         }
 
-        function adjustTemp(sign) {
-            const mainSpan = document.getElementById('numpad-val-main');
-            let val = parseFloat(mainSpan.innerText);
-            if (isNaN(val)) return;
-            const diff = appData.settings.tempUnit === 'F' ? 0.9 : 0.5; val += diff * sign; mainSpan.innerText = val.toFixed(1);
-        }
-
-        function renderTrendLine(patient, vitalKey) {
-            const trendContainer = document.getElementById('numpad-trend-line');
-            trendContainer.innerHTML = '';
-            
-            if (!patient.vitalHistory || !patient.vitalHistory[vitalKey] || patient.vitalHistory[vitalKey].length === 0) {
-                trendContainer.innerText = "No previous entries logged";
-                trendContainer.style.color = "var(--text-muted)";
-                return;
+        function resetPatientVitalsFromMenu() {
+            if (confirm("Clear all vitals for this patient?")) {
+                const { patient } = findPatientAndRoom(editingPatientId);
+                patient.vitals = { hr: "", bp: "", temp: "", spo2: "", rr: "", rbg: "" };
+                saveData(); renderUI(); showToast("Vitals Cleared"); closeModals();
             }
-            
-            trendContainer.style.color = "inherit";
-            let history = patient.vitalHistory[vitalKey];
-            
-            // Add the "TREND" label in primary green
-            let html = `<span style="color: var(--primary); font-weight: 800; margin-right: 4px; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px;">TREND</span>`;
-            
-            for (let i = 0; i < history.length; i++) {
-                let val = history[i];
-                let isAbnormal = isVitalOutOfRange(vitalKey, val, appData.settings.tempUnit);
-                
-                let bgColor = appData.settings.theme === 'dark' ? (isAbnormal ? '#450a0a' : '#064e3b') : (isAbnormal ? '#fee2e2' : '#dcfce7');
-                let textColor = appData.settings.theme === 'dark' ? (isAbnormal ? '#fca5a5' : '#6ee7b7') : (isAbnormal ? '#991b1b' : '#166534');
-
-                let arrow = '';
-                if (i > 0) {
-                    let prevVal = parseFloat(history[i-1].split('/')[0]);
-                    let currVal = parseFloat(val.split('/')[0]);
-                    if (currVal > prevVal) arrow = '↑ ';
-                    else if (currVal < prevVal) arrow = '↓ ';
-                }
-
-                html += `<span style="background: ${bgColor}; color: ${textColor}; padding: 3px 8px; border-radius: 8px; font-size: 0.8rem; border: 1px solid ${textColor}40;">${arrow}${val}</span>`;
-                if (i < history.length - 1) html += `<span style="color: var(--text-muted); opacity: 0.6;">→</span>`;
-            }
-            trendContainer.innerHTML = html;
         }
+            
 
         function numpadSubmit() {
             const mainSpan = document.getElementById('numpad-val-main').innerText.trim();
