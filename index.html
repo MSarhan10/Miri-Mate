@@ -85,6 +85,16 @@
         .room-actions button.btn-add { background: var(--primary); color: white; border: none; }
         .room-actions button.btn-menu { font-size: 1.3rem; color: var(--text-main); border: 1px solid var(--divider); background: var(--surface); padding: 4px 10px;}
         .room-content { min-height: 50px; border-radius: 16px; transition: background 0.2s; padding-bottom: 5px; }
+.room-content:empty::before {
+    content: "This room is empty.";
+    display: block;
+    text-align: left;
+    padding: 5px 5px;
+    color: var(--text-muted);
+    font-style: italic;
+    font-weight: 400;
+}
+
 
         .patient-card {
             background: var(--surface); border-radius: 16px; padding: 16px; margin-bottom: 12px;
