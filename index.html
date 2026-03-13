@@ -666,10 +666,17 @@
 
         <div class="settings-group" style="margin-bottom: 15px;">
             <label style="font-weight:600; margin-bottom: 5px; display:block;">Temperature Unit</label>
-            <select id="setting-temp">
+            <select id="setting-temp" style="margin-bottom: 15px;">
                 <option value="C">Celsius (°C)</option>
                 <option value="F">Fahrenheit (°F)</option>
             </select>
+            <div style="font-weight: 800; margin-bottom: 10px; color: var(--text-main); border-bottom: 1px solid var(--divider); padding-bottom: 5px;">Copy Options</div>
+            <label style="font-weight:600; margin-bottom: 10px; display:flex; align-items:center; gap:8px; cursor:pointer;">
+                <input type="checkbox" id="setting-room-names" style="width:20px; height:20px; margin:0;"> Include Room Names
+            </label>
+            <label style="font-weight:600; margin-bottom: 5px; display:flex; align-items:center; gap:8px; cursor:pointer;">
+                <input type="checkbox" id="setting-empty-patients" style="width:20px; height:20px; margin:0;"> Include Patients with No Vitals
+            </label>
         </div>
         <button class="btn-main" onclick="saveSettings()" style="margin-bottom: 25px;">Save Settings</button>
         
@@ -1017,7 +1024,9 @@ if (!appData.ddxSelectedSymptoms) appData.ddxSelectedSymptoms = [];
                 });
             });
             if (!appData.settings.stopwatchDuration) appData.settings.stopwatchDuration = 15;
-if (typeof appData.settings.savedNewsIndex === 'undefined') appData.settings.savedNewsIndex = 0;
+            if (typeof appData.settings.savedNewsIndex === 'undefined') appData.settings.savedNewsIndex = 0;
+            if (typeof appData.settings.includeRoomNames === 'undefined') appData.settings.includeRoomNames = false;
+            if (typeof appData.settings.includeEmptyPatients === 'undefined') appData.settings.includeEmptyPatients = false;
             if (!appData.notifiedTaskIds) appData.notifiedTaskIds = [];
 
             // Apply Theme On Load
@@ -1186,6 +1195,7 @@ if (typeof appData.settings.savedNewsIndex === 'undefined') appData.settings.sav
         // NOTES SYSTEM
         // =============================================
         function openNotes(patientId) {
+            document.body.style.overflow = 'hidden'; // Lock background
             editingPatientId = patientId;
             const { patient } = findPatientAndRoom(patientId);
             document.getElementById('notes-title').innerText = patient.name;
@@ -1198,6 +1208,7 @@ if (typeof appData.settings.savedNewsIndex === 'undefined') appData.settings.sav
         }
 
         function closeNotes() {
+            document.body.style.overflow = ''; // Unlock background
             document.getElementById('notes-modal').style.display = 'none';
         }
 
@@ -1647,12 +1658,14 @@ const cycleColors = ['var(--text-main)', '#ef4444', '#22c55e', '#eab308'];
         // OVERLAYS & MODALS
         // =============================================
         function showOverlay() {
+            document.body.style.overflow = 'hidden'; // Locks background scrolling
             const overlay = document.getElementById('main-overlay');
             overlay.style.display = 'block';
             setTimeout(() => overlay.style.opacity = '1', 10);
         }
 
         function closeModals() {
+            document.body.style.overflow = ''; // Unlocks background scrolling
             document.getElementById('main-overlay').style.opacity = '0';
             setTimeout(() => document.getElementById('main-overlay').style.display = 'none', 300);
             document.querySelectorAll('.center-modal').forEach(m => {
@@ -1665,7 +1678,7 @@ const cycleColors = ['var(--text-main)', '#ef4444', '#22c55e', '#eab308'];
             document.getElementById('all-tasks-sheet').style.bottom = '-100%';
             document.getElementById('overdue-tasks-sheet').style.bottom = '-100%';
             document.getElementById('notes-modal').style.display = 'none';
-document.getElementById('news-modal').style.display = 'none';
+            document.getElementById('news-modal').style.display = 'none';
             activeRoomId = null;
         }
 
@@ -1681,6 +1694,7 @@ function checkNewsBadge() {
         }
 
         function openNewsModal() {
+            document.body.style.overflow = 'hidden'; // Lock background
             // Update saved index and hide red dot
             appData.settings.savedNewsIndex = LATEST_NEWS_INDEX;
             saveData();
@@ -1691,10 +1705,12 @@ function checkNewsBadge() {
         }
 
         function closeNewsModal() {
+            document.body.style.overflow = ''; // Unlock background
             document.getElementById('news-modal').style.display = 'none';
         }
 
         function openHowToUse() {
+            document.body.style.overflow = 'hidden'; // Lock background
             const overlay = document.getElementById('htu-overlay');
             overlay.style.display = 'block';
             setTimeout(() => overlay.style.opacity = '1', 10);
@@ -1705,6 +1721,7 @@ function checkNewsBadge() {
         }
 
         function closeHowToUse() {
+            document.body.style.overflow = ''; // Unlock background
             const modal = document.getElementById('htu-modal');
             modal.style.opacity = '0';
             modal.style.transform = 'translate(-50%, -50%) scale(0.9)';
@@ -1857,14 +1874,31 @@ function toggleRoomCollapse(roomId) {
         function copyRoomData() {
             const room = appData.rooms.find(r => r.id === activeRoomId);
             if (room.patients.length === 0) return showToast("No patients in this room");
-            let text = `${room.name}\n===================\n`;
+            
+            let text = "";
+            let roomText = "";
             room.patients.forEach(p => {
-                text += `${p.name}\n`;
-                if (p.vitals.hr) text += `HR: ${p.vitals.hr}\n`; if (p.vitals.bp) text += `BP: ${p.vitals.bp}\n`;
-                if (p.vitals.temp) text += `Temp: ${p.vitals.temp} ${appData.settings.tempUnit || 'C'}\n`;
-                if (p.vitals.spo2) text += `SpO2: ${p.vitals.spo2}%\n`; if (p.vitals.rr) text += `RR: ${p.vitals.rr}\n`;
-                if (p.vitals.rbg) text += `RBG: ${p.vitals.rbg} mg/dL\n`; text += `\n`;
+                const hasVitals = p.vitals.hr || p.vitals.bp || p.vitals.temp || p.vitals.spo2 || p.vitals.rr || p.vitals.rbg;
+                if (!appData.settings.includeEmptyPatients && !hasVitals) return;
+
+                roomText += `${p.name}\n`;
+                if (p.vitals.hr) roomText += `HR: ${p.vitals.hr}\n`; 
+                if (p.vitals.bp) roomText += `BP: ${p.vitals.bp}\n`;
+                if (p.vitals.temp) roomText += `Temp: ${p.vitals.temp}°${appData.settings.tempUnit || 'C'}\n`;
+                if (p.vitals.spo2) roomText += `SpO2: ${p.vitals.spo2}%\n`; 
+                if (p.vitals.rr) roomText += `RR: ${p.vitals.rr}\n`;
+                if (p.vitals.rbg) roomText += `RBG: ${p.vitals.rbg} mg/dL\n`; 
+                roomText += `\n`;
             });
+
+            if (roomText) {
+                if (appData.settings.includeRoomNames) {
+                    text += `${room.name}\n===================\n`;
+                }
+                text += roomText;
+            }
+
+            if (!text.trim()) return showToast("No vitals to copy in this room");
             triggerCopy(text.trim(), "Room Data Copied!");
         }
 
@@ -2237,12 +2271,16 @@ function toggleRoomCollapse(roomId) {
         function openSettings() {
             document.getElementById('setting-temp').value = appData.settings.tempUnit || 'C';
             document.getElementById('theme-toggle').checked = appData.settings.theme === 'dark';
+            document.getElementById('setting-room-names').checked = !!appData.settings.includeRoomNames;
+            document.getElementById('setting-empty-patients').checked = !!appData.settings.includeEmptyPatients;
             showOverlay(); const modal = document.getElementById('settings-modal'); modal.style.display = 'block';
             setTimeout(() => { modal.style.opacity = '1'; modal.style.transform = 'translate(-50%, -50%) scale(1)'; }, 10);
         }
 
         function saveSettings() {
             appData.settings.tempUnit = document.getElementById('setting-temp').value;
+            appData.settings.includeRoomNames = document.getElementById('setting-room-names').checked;
+            appData.settings.includeEmptyPatients = document.getElementById('setting-empty-patients').checked;
             saveData(); renderUI(); showToast("Settings Saved"); closeModals();
         }
         
@@ -2374,6 +2412,7 @@ function toggleRoomCollapse(roomId) {
         ];
 
         function openLabValues() {
+            document.body.style.overflow = 'hidden'; // Lock background
             closeModals();
             document.getElementById('lab-search-input').value = '';
             renderLabValues('');
@@ -2381,10 +2420,9 @@ function toggleRoomCollapse(roomId) {
         }
 
         function closeLabValues() {
+            document.body.style.overflow = ''; // Unlock background
             document.getElementById('lab-modal').style.display = 'none';
         }
-
-        function filterLabs(query) { renderLabValues(query); }
 
         function renderLabValues(filter) {
             const container = document.getElementById('lab-values-content');
@@ -2458,7 +2496,7 @@ function toggleRoomCollapse(roomId) {
         function copySinglePatient() {
             const { patient } = findPatientAndRoom(editingPatientId); let text = `${patient.name}\n`;
             if (patient.vitals.hr) text += `HR: ${patient.vitals.hr}\n`; if (patient.vitals.bp) text += `BP: ${patient.vitals.bp}\n`;
-            if (patient.vitals.temp) text += `Temp: ${patient.vitals.temp} ${appData.settings.tempUnit || 'C'}\n`;
+            if (patient.vitals.temp) text += `Temp: ${patient.vitals.temp}°${appData.settings.tempUnit || 'C'}\n`;
             if (patient.vitals.spo2) text += `SpO2: ${patient.vitals.spo2}%\n`; if (patient.vitals.rr) text += `RR: ${patient.vitals.rr}\n`;
             if (patient.vitals.rbg) text += `RBG: ${patient.vitals.rbg} mg/dL\n`; triggerCopy(text.trim(), "Patient Copied!");
         }
@@ -2467,16 +2505,30 @@ function toggleRoomCollapse(roomId) {
             let text = "";
             appData.rooms.forEach(room => {
                 if (room.patients.length === 0) return;
-                text += `${room.name}\n===================\n`;
+                
+                let roomText = "";
                 room.patients.forEach(p => {
-                    text += `${p.name}\n`;
-                    if (p.vitals.hr) text += `HR: ${p.vitals.hr}\n`; if (p.vitals.bp) text += `BP: ${p.vitals.bp}\n`;
-                    if (p.vitals.temp) text += `Temp: ${p.vitals.temp} ${appData.settings.tempUnit || 'C'}\n`;
-                    if (p.vitals.spo2) text += `SpO2: ${p.vitals.spo2}%\n`; if (p.vitals.rr) text += `RR: ${p.vitals.rr}\n`;
-                    if (p.vitals.rbg) text += `RBG: ${p.vitals.rbg} mg/dL\n`; text += `\n`;
+                    const hasVitals = p.vitals.hr || p.vitals.bp || p.vitals.temp || p.vitals.spo2 || p.vitals.rr || p.vitals.rbg;
+                    if (!appData.settings.includeEmptyPatients && !hasVitals) return;
+
+                    roomText += `${p.name}\n`;
+                    if (p.vitals.hr) roomText += `HR: ${p.vitals.hr}\n`; 
+                    if (p.vitals.bp) roomText += `BP: ${p.vitals.bp}\n`;
+                    if (p.vitals.temp) roomText += `Temp: ${p.vitals.temp}°${appData.settings.tempUnit || 'C'}\n`;
+                    if (p.vitals.spo2) roomText += `SpO2: ${p.vitals.spo2}%\n`; 
+                    if (p.vitals.rr) roomText += `RR: ${p.vitals.rr}\n`;
+                    if (p.vitals.rbg) roomText += `RBG: ${p.vitals.rbg} mg/dL\n`; 
+                    roomText += `\n`;
                 });
+
+                if (roomText) {
+                    if (appData.settings.includeRoomNames) {
+                        text += `${room.name}\n===================\n`;
+                    }
+                    text += roomText;
+                }
             });
-            if (!text) return showToast("No patients to copy"); triggerCopy(text.trim(), "All Data Copied!");
+            if (!text.trim()) return showToast("No vitals to copy"); triggerCopy(text.trim(), "All Data Copied!");
         }
 
         function triggerCopy(text, successMsg) {
@@ -3201,18 +3253,20 @@ let ddxActiveSystem = null;
 let ddxSelectedSymptoms = [];
 
 function openDDx() {
-    closeModals();
-    document.getElementById('ddx-search-input').value = '';
-    ddxActiveSystem = null;
-    renderDdxSystems();
-    updateDdxResults();
-    document.getElementById('ddx-modal').style.display = 'flex';
-}
+            document.body.style.overflow = 'hidden'; // Lock background
+            closeModals();
+            document.getElementById('ddx-search-input').value = '';
+            ddxActiveSystem = null;
+            renderDdxSystems();
+            updateDdxResults();
+            document.getElementById('ddx-modal').style.display = 'flex';
+        }
 
-function closeDDx() {
-    document.getElementById('ddx-modal').style.display = 'none';
-    closeDdxSymptomsModal();
-}
+        function closeDDx() {
+            document.body.style.overflow = ''; // Unlock background
+            document.getElementById('ddx-modal').style.display = 'none';
+            closeDdxSymptomsModal();
+        }
 
 function toggleDdxSystem(sysId) {
     ddxActiveSystem = sysId;
