@@ -1331,11 +1331,15 @@ function toggleFilterBar() {
         btn.classList.remove('active');
         btn.innerHTML = '🔎';
         
+        // Clear temporary filter collapse states before clearing search
+        appData.rooms.forEach(r => delete r.filterCollapsed);
+        
         // Clear filters automatically when closed so patients aren't accidentally hidden
         setPatientFilter('all', true); 
         clearSearch('patient-search-input');
     } else {
         // Open it: show content, change button to red 'X' and rotate
+        appData.rooms.forEach(r => delete r.filterCollapsed); // reset temporary states on open
         content.classList.add('show');
         btn.classList.add('active');
         btn.innerHTML = '✕';
@@ -1449,17 +1453,22 @@ function clearSearch(inputId) {
 
                     anyVisibleRooms = true;
 
+                    // Determine if the room should appear collapsed
+                    const isVisuallyCollapsed = isFiltering 
+                        ? (room.filterCollapsed === undefined ? false : room.filterCollapsed) 
+                        : room.collapsed;
+
                     const roomEl = document.createElement('div');
                     roomEl.className = 'room-section';
                     roomEl.innerHTML = `
                         <div class="room-header">
-                            <div class="room-title">${room.name} ${isFiltering ? `<span style="font-size:0.8rem; color:var(--text-muted); font-weight:normal;">(${filteredPatients.length} matches)</span>` : ''}</div>
+                            <div class="room-title">${room.name}</div>
                             <div class="room-actions">
                                 <button onclick="openNameModal('${room.id}')" style="padding: 4px 10px; margin-right: 8px; color: white; background: var(--primary); font-size: 1rem; border: none; border-radius: 8px; font-weight: bold;">+ Patient</button>
-                                <button onclick="toggleRoomCollapse('${room.id}')" style="padding: 4px 10px; color: var(--text-main); font-size: 1.1rem; border: 1px solid var(--divider); background: var(--surface); border-radius: 8px;">${room.collapsed ? '⬇️' : '⬆️'}</button>
+                                <button onclick="toggleRoomCollapse('${room.id}')" style="padding: 4px 10px; color: var(--text-main); font-size: 1.1rem; border: 1px solid var(--divider); background: var(--surface); border-radius: 8px;">${isVisuallyCollapsed ? '⬇️' : '⬆️'}</button>
                             </div>
                         </div>
-                        <div class="room-content" data-room-id="${room.id}" style="display: ${room.collapsed ? 'none' : 'block'};"></div>
+                        <div class="room-content" data-room-id="${room.id}" style="display: ${isVisuallyCollapsed ? 'none' : 'block'};"></div>
                     `;
                     const contentEl = roomEl.querySelector('.room-content');
                     filteredPatients.forEach(p => contentEl.appendChild(createPatientCard(p)));
@@ -2390,13 +2399,20 @@ function checkNewsBadge() {
         // =============================================
 
 function toggleRoomCollapse(roomId) {
-            const room = appData.rooms.find(r => r.id === roomId);
-            if (room) {
-                room.collapsed = !room.collapsed;
-                saveData(); // Saves the open/closed state to local storage
-                renderUI(); // Refreshes the UI to show the change
-            }
+    const isFiltering = activePatientFilter !== 'all' || patientSearchQuery !== '';
+    const room = appData.rooms.find(r => r.id === roomId);
+    if (room) {
+        if (isFiltering) {
+            // Temporarily toggle just for this filter session
+            room.filterCollapsed = room.filterCollapsed === undefined ? true : !room.filterCollapsed;
+        } else {
+            // Standard toggle
+            room.collapsed = !room.collapsed;
+            saveData(); // Saves the open/closed state to local storage
         }
+        renderUI(); // Refreshes the UI to show the change
+    }
+}
 
         function openRoomMenu(roomId) {
             activeRoomId = roomId;
