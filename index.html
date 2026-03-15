@@ -114,12 +114,22 @@
 .manage-item.dragging { opacity: 0.5; box-shadow: 0 4px 10px rgba(0,0,0,0.1); z-index: 1000; }
 
 .manage-drag-handle { font-size: 1.5rem; color: var(--text-muted); padding-right: 12px; cursor: grab; touch-action: none; }
-.manage-name { flex-grow: 1; font-weight: 700; color: var(--text-main); font-size: 1.1rem; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 10px;}
+.manage-name { 
+    font-weight: 700; color: var(--text-main); font-size: 1.1rem; 
+    cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: clip; 
+    text-decoration: underline dashed var(--text-muted);
+    text-underline-offset: 4px;
+    display: inline-block;
+    max-width: 100%;
+}
+.manage-name:active { opacity: 0.5; }
 .manage-actions { display: flex; gap: 6px; }
 .manage-btn { 
     background: var(--bg); border: 1px solid var(--divider); border-radius: 8px; 
-    width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; 
-    font-size: 1.1rem; cursor: pointer; 
+    width: 30px; height: 30px; /* Reduced from 36px */
+    display: flex; align-items: center; justify-content: center; 
+    font-size: 0.95rem; /* Reduced from 1.1rem */
+    cursor: pointer; 
 }
 .manage-btn:active { background: var(--divider); }
 
@@ -161,14 +171,24 @@
         .patient-card.dragging { opacity: 0.3; touch-action: none; }
         
         .patient-header { 
-            display: flex; justify-content: space-between; align-items: center; 
-            border-bottom: 1px solid var(--divider); padding-bottom: 12px; margin-bottom: 16px; 
-        }
-        
-        .patient-header-left { display: flex; align-items: center; }
-        .patient-header-right { display: flex; align-items: center; flex-grow: 1; justify-content: flex-end; }
+    display: flex; justify-content: space-between; align-items: flex-start; /* Aligns top so button stays in place if name drops to 2 lines */
+    border-bottom: 1px solid var(--divider); padding-bottom: 12px; margin-bottom: 16px; 
+}
 
-        .patient-name { font-size: 1.25rem; font-weight: 700; dir: auto; color: var(--text-main); margin-right: 10px; text-align: right; }
+.patient-header-left { display: flex; align-items: flex-start; flex-grow: 1; min-width: 0; }
+.patient-header-right { display: flex; align-items: flex-start; flex-shrink: 0; justify-content: flex-end; }
+
+.patient-name { 
+    font-size: 1.25rem; 
+    font-weight: 700; 
+    color: var(--text-main); 
+    margin-inline-end: 10px; 
+    text-align: start; 
+    white-space: normal; /* Allows the text to flow and wrap */
+    word-break: break-word; /* Prevents overflow if a single word is extremely long */
+    line-height: 1.3; 
+    margin-top: 2px; /* Slightly centers the first line of text with the button */
+}
         
         .patient-header-right button { 
             background: var(--surface); border: 1px solid var(--divider); font-size: 1.3rem; cursor: pointer; 
@@ -500,20 +520,6 @@ html.modal-open, body.modal-open {
     width: 100% !important;
 }
 
-/* Floating Add Patient Button */
-.fab-add {
-    position: fixed; bottom: 24px; right: 24px;
-    padding: 14px 24px; /* Added padding instead of fixed width/height */
-    background-color: var(--primary); color: white;
-    border-radius: 30px; /* Changed from 50% to make it a rounded pill/rectangle */
-    display: flex; justify-content: center; align-items: center;
-    font-size: 1.1rem; /* Smaller font size to fit the text */
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    cursor: pointer; z-index: 95; border: none; font-weight: bold;
-    transition: transform 0.2s, background-color 0.3s;
-}
-.fab-add:active { transform: scale(0.9); }
-
         #toast {
     visibility: hidden;
     min-width: 250px;
@@ -531,7 +537,8 @@ html.modal-open, body.modal-open {
     font-weight: 600;
     box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     opacity: 0;
-    /* We don't animate visibility here, just opacity and position */
+    pointer-events: none;
+    user-select: none;
 }
 
 #toast.show {
@@ -570,7 +577,6 @@ html.modal-open, body.modal-open {
     <div id="floating-timer" onclick="openStopwatch()">⏱️ 15s</div>
     <div class="container" id="app-content"></div>
 <div class="container" id="app-content"></div>
-    <button class="fab-add" onclick="openNameModal()" title="Add Patient">+ Patient</button>
     <div class="overlay" id="main-overlay" onclick="closeModals()"></div>
 
     <!-- Stopwatch Modal -->
@@ -666,12 +672,13 @@ html.modal-open, body.modal-open {
     </div>
     
     <!-- Explanation Text Added Here -->
-    <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px; line-height: 1.4;">
-        <b>☰</b> Reorder | <b>📋</b> Copy Vitals | <b>🔄</b> Reset Vitals | <b>🗑️</b> Delete
+    <div style="text-align: center; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px; line-height: 1.6;">
+        <b>☰</b> Reorder &nbsp;|&nbsp; <b>📋</b> Copy &nbsp;|&nbsp; <b>🔄</b> Reset &nbsp;|&nbsp; <b>🗑️</b> Delete<br>
+        Tap any name to edit/rename it <b>✏️</b>
     </div>
 
     <div class="btn-row" style="margin-bottom: 15px;">
-        <button class="btn-secondary" onclick="copyToClipboard()" style="padding: 10px; font-size: 0.95rem;">📋 Copy All Data</button>
+        <button class="btn-secondary" onclick="copyToClipboard()" style="padding: 10px; font-size: 0.95rem;">📋 Copy All Vitals</button>
         <button class="btn-danger" onclick="resetEntireApp()" style="padding: 10px; font-size: 0.95rem;">🔄 Reset App Data</button>
     </div>
     <div id="manage-list-container" style="max-height: 50vh; overflow-y: auto; overflow-x: hidden; padding-right: 5px; padding-bottom: 20px;"></div>
@@ -681,8 +688,7 @@ html.modal-open, body.modal-open {
     <!-- Patient Name Modal -->
     <div class="center-modal" id="name-modal">
         <h2 id="name-modal-title">Patient Name</h2>
-        <input type="text" id="patient-name-input" placeholder="Enter patient name" dir="auto">
-        <select id="patient-room-select" style="margin-bottom: 20px;"></select>
+        <input type="text" id="patient-name-input" placeholder="Enter patient name" dir="auto" style="margin-bottom: 20px;">
         <div class="btn-row">
             <button class="btn-secondary" onclick="closeModals()">Cancel</button>
             <button class="btn-main" onclick="savePatient()">Save</button>
@@ -712,11 +718,6 @@ html.modal-open, body.modal-open {
         </div>
 
         <div class="settings-group" style="margin-bottom: 15px;">
-            <label style="font-weight:600; margin-bottom: 5px; display:block;">Temperature Unit</label>
-            <select id="setting-temp" style="margin-bottom: 15px;">
-                <option value="C">Celsius (°C)</option>
-                <option value="F">Fahrenheit (°F)</option>
-            </select>
             <div style="font-weight: 800; margin-bottom: 10px; color: var(--text-main); border-bottom: 1px solid var(--divider); padding-bottom: 5px;">Copy Options</div>
             <label style="font-weight:600; margin-bottom: 10px; display:flex; align-items:center; gap:8px; cursor:pointer;">
                 <input type="checkbox" id="setting-room-names" style="width:20px; height:20px; margin:0;"> Include Room Names
@@ -1140,7 +1141,7 @@ if (!appData.settings.toolbar) {
                 case 'spo2': return v < 95;
                 case 'rbg': return v < 70 || v > 200;
                 case 'temp':
-                    return tempUnit === 'F' ? (v < 97.7 || v > 99.15) : (v < 36.5 || v > 37.3);
+                    return (v < 36.5 || v > 37.3);
                 case 'bp':
                     let parts = val.split('/');
                     if (parts.length === 2) {
@@ -1188,8 +1189,9 @@ renderToolbar();
                     <div class="room-header">
                         <div class="room-title">${room.name}</div>
                         <div class="room-actions">
-    <button onclick="toggleRoomCollapse('${room.id}')" style="padding: 4px 10px; color: var(--text-main); font-size: 1.1rem; border: 1px solid var(--divider); background: var(--surface); border-radius: 8px;">${room.collapsed ? '⬇️' : '⬆️'}</button>
-</div>
+                            <button onclick="openNameModal('${room.id}')" style="padding: 4px 10px; margin-right: 8px; color: white; background: var(--primary); font-size: 1rem; border: none; border-radius: 8px; font-weight: bold;">+ Patient</button>
+                            <button onclick="toggleRoomCollapse('${room.id}')" style="padding: 4px 10px; color: var(--text-main); font-size: 1.1rem; border: 1px solid var(--divider); background: var(--surface); border-radius: 8px;">${room.collapsed ? '⬇️' : '⬆️'}</button>
+                        </div>
                     </div>
                     <div class="room-content" data-room-id="${room.id}" style="display: ${room.collapsed ? 'none' : 'block'};"></div>
                 `;
@@ -1223,7 +1225,7 @@ renderToolbar();
             card.innerHTML = `
                 <div class="patient-header">
     <div class="patient-header-left">
-        <div class="patient-name" dir="auto" style="text-align: left;">${p.name}</div>
+        <div class="patient-name" dir="auto">${p.name}</div>
     </div>
     <div class="patient-header-right">
         <button class="${notesBtnClass}" onclick="openNotes(${p.id})" title="Notes">📝</button>
@@ -1239,7 +1241,7 @@ renderToolbar();
                         <div class="vital-value">${p.vitals.bp || '+'}</div>
                     </div>
                     <div class="vital-box ${getVitalClass('temp', p.vitals.temp)}" onclick="openNumpad(${p.id}, 'temp')">
-                        <div class="vital-label">Temp ${appData.settings.tempUnit || 'C'}</div>
+                        <div class="vital-label">Temp</div>
                         <div class="vital-value">${p.vitals.temp || '+'}</div>
                     </div>
                     <div class="vital-box ${getVitalClass('spo2', p.vitals.spo2)}" onclick="openNumpad(${p.id}, 'spo2')">
@@ -1329,8 +1331,10 @@ function createManageItem(type, id, name) {
     
     div.innerHTML = `
         <div class="manage-drag-handle">☰</div>
-        <div class="manage-name" onclick="editManageName('${type}', '${id}')">${name}</div>
-        <div class="manage-actions">
+        <div style="flex-grow: 1; min-width: 0; overflow: hidden; display: flex; align-items: center; margin-inline-end: 15px;">
+            <div class="manage-name" dir="auto" onclick="editManageName('${type}', '${id}')" title="Rename">${name} </div>
+        </div>
+        <div class="manage-actions" style="flex-shrink: 0;">
             <button class="manage-btn" onclick="manageAction('copy', '${type}', '${id}')" title="Copy">📋</button>
             <button class="manage-btn" onclick="manageAction('reset', '${type}', '${id}')" title="Reset Vitals">🔄</button>
             <button class="manage-btn" style="color:#b91c1c;" onclick="manageAction('delete', '${type}', '${id}')" title="Delete">🗑️</button>
@@ -2144,9 +2148,9 @@ function toggleRoomCollapse(roomId) {
 
                 roomText += `${p.name}\n`;
                 if (p.vitals.hr) roomText += `HR: ${p.vitals.hr}\n`; 
-                if (p.vitals.bp) roomText += `BP: ${p.vitals.bp}\n`;
-                if (p.vitals.temp) roomText += `Temp: ${p.vitals.temp}°${appData.settings.tempUnit || 'C'}\n`;
-                if (p.vitals.spo2) roomText += `SpO2: ${p.vitals.spo2}%\n`; 
+                    if (p.vitals.bp) roomText += `BP: ${p.vitals.bp}\n`;
+                    if (p.vitals.temp) roomText += `Temp: ${p.vitals.temp}°C\n`;
+                    if (p.vitals.spo2) roomText += `SpO2: ${p.vitals.spo2}%\n`;
                 if (p.vitals.rr) roomText += `RR: ${p.vitals.rr}\n`;
                 if (p.vitals.rbg) roomText += `RBG: ${p.vitals.rbg} mg/dL\n`; 
                 roomText += `\n`;
@@ -2178,18 +2182,7 @@ function toggleRoomCollapse(roomId) {
             activeRoomId = roomId;
             if (patientId) editingPatientId = patientId;
             const input = document.getElementById('patient-name-input');
-            const roomSelect = document.getElementById('patient-room-select');
 
-            // Populate the room dropdown
-            roomSelect.innerHTML = '';
-            appData.rooms.forEach(r => {
-                const opt = document.createElement('option');
-                opt.value = r.id;
-                opt.innerText = r.name;
-                roomSelect.appendChild(opt);
-            });
-
-            // Prevent opening if there are no rooms
             if (appData.rooms.length === 0 && !editingPatientId) {
                 return showToast("Please add a room first!");
             }
@@ -2197,12 +2190,10 @@ function toggleRoomCollapse(roomId) {
             if (editingPatientId && !roomId) {
                 document.getElementById('name-modal-title').innerText = "Edit Patient Name";
                 input.value = findPatientAndRoom(editingPatientId).patient.name;
-                roomSelect.style.display = 'none'; // Hide dropdown when editing
             } else {
                 document.getElementById('name-modal-title').innerText = "New Patient"; 
                 input.value = ""; 
                 editingPatientId = null;
-                roomSelect.style.display = 'block'; // Show dropdown when adding
             }
             
             showOverlay(); 
@@ -2218,8 +2209,7 @@ function toggleRoomCollapse(roomId) {
             if (editingPatientId) {
                 findPatientAndRoom(editingPatientId).patient.name = name;
             } else {
-                const selectedRoomId = document.getElementById('patient-room-select').value;
-                const targetRoom = appData.rooms.find(r => r.id === selectedRoomId);
+                const targetRoom = appData.rooms.find(r => r.id === activeRoomId);
                 if (targetRoom) {
                     targetRoom.patients.push({
                         id: Date.now(), name: name, vitals: { hr: "", bp: "", temp: "", spo2: "", rr: "", rbg: "" }, notes: ""
@@ -2233,7 +2223,7 @@ function toggleRoomCollapse(roomId) {
             const mainSpan = document.getElementById('numpad-val-main');
             let val = parseFloat(mainSpan.innerText);
             if (isNaN(val)) return;
-            const diff = appData.settings.tempUnit === 'F' ? 0.9 : 0.5; val += diff * sign; mainSpan.innerText = val.toFixed(1);
+            const diff = 0.5; val += diff * sign; mainSpan.innerText = val.toFixed(1);
         }
 
         // --- NEW TREND LINE FUNCTIONS START HERE ---
@@ -2358,8 +2348,7 @@ function toggleRoomCollapse(roomId) {
             if (vitalKey === 'hr') { btnHrX2.style.display = 'inline-block'; btnHrX4.style.display = 'inline-block'; btnHrDiv3.style.display = 'inline-block'; } 
             else if (vitalKey === 'temp') {
                 tempPlusBtn.style.display = 'inline-block'; tempMinusBtn.style.display = 'inline-block';
-                const diff = appData.settings.tempUnit === 'F' ? 0.9 : 0.5;
-                tempPlusBtn.innerText = `+${diff}`; tempMinusBtn.innerText = `-${diff}`;
+                tempPlusBtn.innerText = `+0.5`; tempMinusBtn.innerText = `-0.5`;
             }
             showOverlay(); document.getElementById('numpad-sheet').style.bottom = '0';
         }
@@ -2450,7 +2439,6 @@ function toggleRoomCollapse(roomId) {
         // SETTINGS & THEME
         // =============================================
         function openSettings() {
-            document.getElementById('setting-temp').value = appData.settings.tempUnit || 'C';
             document.getElementById('theme-toggle').checked = appData.settings.theme === 'dark';
             document.getElementById('setting-room-names').checked = !!appData.settings.includeRoomNames;
             document.getElementById('setting-empty-patients').checked = !!appData.settings.includeEmptyPatients;
@@ -2459,7 +2447,6 @@ function toggleRoomCollapse(roomId) {
         }
 
         function saveSettings() {
-            appData.settings.tempUnit = document.getElementById('setting-temp').value;
             appData.settings.includeRoomNames = document.getElementById('setting-room-names').checked;
             appData.settings.includeEmptyPatients = document.getElementById('setting-empty-patients').checked;
             saveData(); renderUI(); showToast("Settings Saved"); closeModals();
@@ -2675,11 +2662,22 @@ function toggleRoomCollapse(roomId) {
         // COPY / BACKUP
         // =============================================
         function copySinglePatient() {
-            const { patient } = findPatientAndRoom(editingPatientId); let text = `${patient.name}\n`;
-            if (patient.vitals.hr) text += `HR: ${patient.vitals.hr}\n`; if (patient.vitals.bp) text += `BP: ${patient.vitals.bp}\n`;
-            if (patient.vitals.temp) text += `Temp: ${patient.vitals.temp}°${appData.settings.tempUnit || 'C'}\n`;
-            if (patient.vitals.spo2) text += `SpO2: ${patient.vitals.spo2}%\n`; if (patient.vitals.rr) text += `RR: ${patient.vitals.rr}\n`;
-            if (patient.vitals.rbg) text += `RBG: ${patient.vitals.rbg} mg/dL\n`; triggerCopy(text.trim(), "Patient Copied!");
+            const { patient } = findPatientAndRoom(editingPatientId); 
+            const hasVitals = patient.vitals.hr || patient.vitals.bp || patient.vitals.temp || patient.vitals.spo2 || patient.vitals.rr || patient.vitals.rbg;
+            
+            if (!hasVitals) {
+                return showToast("No vitals to copy for this patient");
+            }
+
+            let text = `${patient.name}\n`;
+            if (patient.vitals.hr) text += `HR: ${patient.vitals.hr}\n`; 
+            if (patient.vitals.bp) text += `BP: ${patient.vitals.bp}\n`;
+            if (patient.vitals.temp) text += `Temp: ${patient.vitals.temp}°C\n`;
+            if (patient.vitals.spo2) text += `SpO2: ${patient.vitals.spo2}%\n`; 
+            if (patient.vitals.rr) text += `RR: ${patient.vitals.rr}\n`;
+            if (patient.vitals.rbg) text += `RBG: ${patient.vitals.rbg} mg/dL\n`; 
+            
+            triggerCopy(text.trim(), "Patient Copied!");
         }
 
         function copyToClipboard() {
@@ -2695,8 +2693,8 @@ function toggleRoomCollapse(roomId) {
                     roomText += `${p.name}\n`;
                     if (p.vitals.hr) roomText += `HR: ${p.vitals.hr}\n`; 
                     if (p.vitals.bp) roomText += `BP: ${p.vitals.bp}\n`;
-                    if (p.vitals.temp) roomText += `Temp: ${p.vitals.temp}°${appData.settings.tempUnit || 'C'}\n`;
-                    if (p.vitals.spo2) roomText += `SpO2: ${p.vitals.spo2}%\n`; 
+                    if (p.vitals.temp) roomText += `Temp: ${p.vitals.temp}°C\n`;
+                    if (p.vitals.spo2) roomText += `SpO2: ${p.vitals.spo2}%\n`;
                     if (p.vitals.rr) roomText += `RR: ${p.vitals.rr}\n`;
                     if (p.vitals.rbg) roomText += `RBG: ${p.vitals.rbg} mg/dL\n`; 
                     roomText += `\n`;
@@ -2713,15 +2711,21 @@ function toggleRoomCollapse(roomId) {
         }
 
         function triggerCopy(text, successMsg) {
-            if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(text).then(() => { showToast(successMsg); closeModals(); }).catch(() => fallbackCopy(text, successMsg)); } 
+            if (navigator.clipboard && window.isSecureContext) { 
+                navigator.clipboard.writeText(text).then(() => { showToast(successMsg); }).catch(() => fallbackCopy(text, successMsg)); 
+            } 
             else { fallbackCopy(text, successMsg); }
         }
 
         function fallbackCopy(text, successMsg) {
-            let ta = document.createElement("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
-            document.body.appendChild(ta); ta.focus(); ta.select();
-            try { document.execCommand('copy') ? showToast(successMsg) : showToast("Failed to copy"); } catch (err) { showToast("Failed to copy"); }
-            document.body.removeChild(ta); closeModals();
+            let ta = document.createElement("textarea"); ta.value = text;
+            ta.style.position = "fixed"; ta.style.left = "-9999px"; // Move off-screen instead of just hidden
+            document.body.appendChild(ta);
+            ta.select();
+            try { 
+                document.execCommand('copy') ? showToast(successMsg) : showToast("Failed to copy"); 
+            } catch (err) { showToast("Failed to copy"); }
+            document.body.removeChild(ta); 
         }
 
         function exportJSON() {
