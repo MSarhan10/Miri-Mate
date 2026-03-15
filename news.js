@@ -1,6 +1,17 @@
-const LATEST_NEWS_INDEX = 4;
+const LATEST_NEWS_INDEX = 5;
 
 const NEWS_HTML = `
+<div style="background: var(--surface); border: 1px solid var(--divider); border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.04);">
+    <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">16 March 2026</div>
+    <div style="font-size: 1.25rem; font-weight: 800; color: var(--primary-dark); margin-bottom: 12px;">Smart Filters & Global Search 🔍</div>           
+    <div style="font-size: 1.05rem; color: var(--text-main); line-height: 1.5;">
+        <ul style="margin: 0; padding-left: 20px; margin-bottom: 14px; color: var(--text-muted);">
+            <li style="margin-bottom: 6px;"><strong>Advanced Patient Filters:</strong> Instantly isolate patients with abnormal vitals, those with pending notes, or view only measured/empty profiles using the new filter chips.</li>
+            <li style="margin-bottom: 6px;"><strong>Global Name Search:</strong> Find any patient across all rooms instantly by typing their name.</li>
+            <li><strong>Seamless Toolbar:</strong> The new search and filter tools are hidden behind a elegant 🔎 button to keep your interface clean and focused.</li>
+        </ul>
+    </div>
+</div>
 <div style="background: var(--surface); border: 1px solid var(--divider); border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.04);">
     <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">15 March 2026</div>
     <div style="font-size: 1.25rem; font-weight: 800; color: var(--primary-dark); margin-bottom: 12px;">Tutorials, Management & Quick Actions ✨</div>           
