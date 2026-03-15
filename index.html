@@ -66,7 +66,7 @@
 
 /* Main Scrollable Toolbar */
 .main-toolbar {
-    display: flex; gap: 10px; padding: 10px 16px; background: var(--surface);
+    display: flex; gap: 10px; padding: 5px 16px; background: var(--surface);
     border-bottom: 1px solid var(--divider); overflow-x: auto;
     -webkit-overflow-scrolling: touch; scrollbar-width: none;
     position: sticky; top: 58px; z-index: 99; /* Sticks just under the header */
@@ -579,6 +579,81 @@ html.modal-open, body.modal-open {
     width: 100% !important;
 }
 
+/* Seamless Expandable Filter Section */
+.filter-bar {
+    display: flex; align-items: center; justify-content: flex-end; 
+    padding: 8px 16px 4px 16px; 
+    background: transparent; /* Removes the big background bar */
+    border: none;            /* Removes the border */
+    gap: 8px; transition: all 0.3s ease;
+}
+.filter-content {
+    display: none; flex: 1; align-items: center; gap: 8px; min-width: 0;
+    animation: fadeIn 0.2s ease-in;
+}
+.filter-content.show {
+    display: flex;
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
+
+/* Shrink chips & gap so search bar has room */
+/* Gives chips more room and adds smooth fading edges */
+.filter-chips {
+    flex: 1.6; /* Takes up more space now */
+    display: flex; gap: 5px; overflow-x: auto;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    
+    /* Fade effect on left and right edges */
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 12px, black calc(100% - 12px), transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0%, black 12px, black calc(100% - 12px), transparent 100%);
+    
+    /* Padding ensures the first/last button isn't permanently faded when fully scrolled */
+    padding: 0 12px;
+    margin: 0 -8px; 
+}
+.filter-chips::-webkit-scrollbar { display: none; }
+.filter-chip {
+    background: var(--surface); /* Contrasts against the transparent background */
+    border: 1px solid var(--divider); color: var(--text-muted);
+    padding: 5px 10px; border-radius: 16px; font-size: 0.75rem; 
+    font-weight: 700; white-space: nowrap; cursor: pointer; transition: 0.2s;
+}
+.filter-chip.active {
+    background: var(--primary); color: white; border-color: var(--primary-dark);
+}
+
+/* Expand Search Bar */
+.search-wrapper { position: relative; display: flex; align-items: center; }
+/* Shrinks the Search Bar */
+.filter-search-wrap { 
+    flex: 1.2; /* Reduced from 1.8 (about a 20-30% reduction) */
+    min-width: 100px; 
+}
+.filter-search-wrap input {
+    width: 100%; padding: 6px 28px 6px 12px !important; margin: 0 !important;
+    border: 1px solid var(--divider) !important; border-radius: 16px !important;
+    font-size: 0.85rem !important; height: 32px; 
+    background: var(--surface); color: var(--text-main);
+}
+.clear-search-btn {
+    position: absolute; right: 6px; background: rgba(100,116,139,0.2); border: none;
+    border-radius: 50%; width: 18px; height: 18px; display: none; align-items: center;
+    justify-content: center; color: var(--text-main); font-size: 0.7rem; cursor: pointer;
+    font-weight: bold;
+}
+
+/* Smaller toggle button */
+.filter-toggle-btn {
+    width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--divider);
+    background: var(--surface); color: var(--text-main); font-size: 0.95rem; 
+    cursor: pointer; display: flex; align-items: center; justify-content: center; 
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+    flex-shrink: 0; font-weight: bold;
+}
+.filter-toggle-btn.active {
+    background: #ef4444; color: white; border-color: #b91c1c; transform: rotate(90deg);
+}
+
         #toast {
     visibility: hidden;
     min-width: 250px;
@@ -631,6 +706,25 @@ html.modal-open, body.modal-open {
         </div>
     </header>
 <div class="main-toolbar" id="main-toolbar"></div>
+
+<div class="filter-bar" id="main-filter-bar">
+    <!-- Hidden Content -->
+    <div class="filter-content" id="filter-content">
+        <div class="filter-chips">
+            <button class="filter-chip" onclick="setPatientFilter('measured')">📊 Measured</button>
+            <button class="filter-chip" onclick="setPatientFilter('abnormal')">🚨 Abnormal</button>
+            <button class="filter-chip" onclick="setPatientFilter('notes')">📝 Notes</button>
+            <button class="filter-chip" onclick="setPatientFilter('empty')">📭 Empty</button>
+        </div>
+        <div class="search-wrapper filter-search-wrap">
+            <input type="text" id="patient-search-input" placeholder="🔍 Pt. Name..." oninput="toggleClearBtn(this); updatePatientSearch(this.value)">
+            <button class="clear-search-btn" onclick="clearSearch('patient-search-input')">✕</button>
+        </div>
+    </div>
+    
+    <!-- Always Visible Toggle Button -->
+    <button class="filter-toggle-btn" id="filter-toggle-btn" onclick="toggleFilterBar()">🔎</button>
+</div>
 
 <!-- Balanced FAB Overlay & Menu -->
     <div class="fab-overlay" id="fab-overlay" onclick="closeFab()"></div>
@@ -950,7 +1044,10 @@ html.modal-open, body.modal-open {
             <div style="width:38px;"></div>
         </div>
         <div class="lab-search-wrap">
-            <input type="text" class="lab-search" id="lab-search-input" placeholder="🔍 Search labs..." oninput="renderLabValues(this.value)">
+            <div class="search-wrapper" style="width: 100%;">
+                <input type="text" class="lab-search" id="lab-search-input" placeholder="🔍 Search labs..." oninput="toggleClearBtn(this); renderLabValues(this.value)" style="margin-bottom:0; width:100%; padding-right: 35px;">
+                <button class="clear-search-btn" onclick="clearSearch('lab-search-input')">✕</button>
+            </div>
         </div>
         <div class="lab-scroll" id="lab-values-content"></div>
     </div>
@@ -967,7 +1064,10 @@ html.modal-open, body.modal-open {
         <div class="ddx-symptoms-panel" id="ddx-symptoms-panel"></div>
         
         <div class="lab-search-wrap" style="border-bottom: none; padding-bottom: 8px;">
-            <input type="text" class="lab-search" id="ddx-search-input" placeholder="🔍 Search disease name..." oninput="updateDdxResults()">
+            <div class="search-wrapper" style="width: 100%;">
+                <input type="text" class="lab-search" id="ddx-search-input" placeholder="🔍 Search disease name..." oninput="toggleClearBtn(this); updateDdxResults()" style="margin-bottom:0; width:100%; padding-right: 35px;">
+                <button class="clear-search-btn" onclick="clearSearch('ddx-search-input')">✕</button>
+            </div>
         </div>
         
         <div class="ddx-active-chips" id="ddx-active-chips"></div>
@@ -979,7 +1079,10 @@ html.modal-open, body.modal-open {
     <div class="center-modal" id="ddx-symptoms-modal" style="z-index: 2002; width: 95%; max-width: 500px; padding: 20px;">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; gap: 10px;">
             <h2 id="ddx-symptoms-title" style="color: var(--primary); margin: 0; font-size: 1.25rem;">Symptoms</h2>
-            <input type="text" id="ddx-symptoms-search" placeholder="🔍 Filter..." oninput="filterDdxSymptoms(this.value)" style="margin: 0; padding: 8px 14px; border-radius: 20px; font-size: 0.95rem; border: 1px solid var(--divider); background: var(--bg); color: var(--text-main); width: 140px; flex-grow: 1; outline: none;">
+            <div class="search-wrapper" style="width: 140px; flex-grow: 1;">
+                <input type="text" id="ddx-symptoms-search" placeholder="🔍 Filter..." oninput="toggleClearBtn(this); filterDdxSymptoms(this.value)" style="margin: 0; padding: 8px 35px 8px 14px; border-radius: 20px; font-size: 0.95rem; border: 1px solid var(--divider); background: var(--bg); color: var(--text-main); width: 100%; outline: none;">
+                <button class="clear-search-btn" onclick="clearSearch('ddx-symptoms-search')">✕</button>
+            </div>
         </div>
         <div class="ddx-symptoms-sheet-content" id="ddx-symptoms-container" style="max-height: 55vh; overflow-y: auto; padding-right: 5px; padding-bottom: 10px;"></div>
     </div>
@@ -1215,6 +1318,71 @@ if (!appData.settings.toolbar) {
             return isVitalOutOfRange(key, val, appData.settings.tempUnit) ? 'out-of-range' : '';
         }
 
+let activePatientFilter = 'all';
+let patientSearchQuery = '';
+
+function toggleFilterBar() {
+    const content = document.getElementById('filter-content');
+    const btn = document.getElementById('filter-toggle-btn');
+    
+    if (content.classList.contains('show')) {
+        // Close it: hide content, reset button, and clear all filters
+        content.classList.remove('show');
+        btn.classList.remove('active');
+        btn.innerHTML = '🔎';
+        
+        // Clear filters automatically when closed so patients aren't accidentally hidden
+        setPatientFilter('all', true); 
+        clearSearch('patient-search-input');
+    } else {
+        // Open it: show content, change button to red 'X' and rotate
+        content.classList.add('show');
+        btn.classList.add('active');
+        btn.innerHTML = '✕';
+    }
+}
+
+function setPatientFilter(filterType, skipRender = false) {
+    // If clicking the same active filter, toggle it off (revert to 'all')
+    if (activePatientFilter === filterType && filterType !== 'all') {
+        activePatientFilter = 'all';
+    } else {
+        activePatientFilter = filterType;
+    }
+
+    // Reset visual states
+    document.querySelectorAll('.filter-chip').forEach(chip => chip.classList.remove('active'));
+    
+    // Set active visual state if a specific filter is chosen
+    if (activePatientFilter !== 'all') {
+        const activeChip = document.querySelector(`.filter-chip[onclick*="${activePatientFilter}"]`);
+        if (activeChip) activeChip.classList.add('active');
+    }
+
+    if (!skipRender) renderUI();
+}
+
+function updatePatientSearch(val) {
+    patientSearchQuery = val.toLowerCase().trim();
+    renderUI();
+}
+
+function toggleClearBtn(inputEl) {
+    const btn = inputEl.nextElementSibling;
+    if (btn && btn.classList.contains('clear-search-btn')) {
+        btn.style.display = inputEl.value.length > 0 ? 'flex' : 'none';
+    }
+}
+
+function clearSearch(inputId) {
+    const input = document.getElementById(inputId);
+    if(input) {
+        input.value = '';
+        toggleClearBtn(input);
+        input.dispatchEvent(new Event('input', { bubbles: true })); // Triggers the oninput event to clear the UI
+    }
+}
+
         function renderUI() {
             const container = document.getElementById('app-content');
             container.innerHTML = '';
@@ -1252,13 +1420,40 @@ if (!appData.settings.toolbar) {
                 `;
                 container.appendChild(emptyMsg);
             } else {
-                // Render rooms normally if they exist
+                // Render rooms normally with filters applied
+                let anyVisibleRooms = false;
+
                 appData.rooms.forEach(room => {
+                    // FILTER LOGIC
+                    let filteredPatients = room.patients.filter(p => {
+                        // 1. Search Filter
+                        if (patientSearchQuery && !p.name.toLowerCase().includes(patientSearchQuery)) return false;
+                        
+                        // 2. Chip Filters
+                        const hasVitals = p.vitals.hr || p.vitals.bp || p.vitals.temp || p.vitals.spo2 || p.vitals.rr || p.vitals.rbg;
+                        const hasAbnormal = ['hr', 'bp', 'temp', 'spo2', 'rr', 'rbg'].some(k => isVitalOutOfRange(k, p.vitals[k], appData.settings.tempUnit));
+                        const hasNotes = p.notes && p.notes.trim() !== '' && p.notes !== '<br>';
+
+                        if (activePatientFilter === 'measured' && !hasVitals) return false;
+                        if (activePatientFilter === 'empty' && hasVitals) return false;
+                        if (activePatientFilter === 'abnormal' && !hasAbnormal) return false;
+                        if (activePatientFilter === 'notes' && !hasNotes) return false;
+
+                        return true;
+                    });
+
+                    const isFiltering = activePatientFilter !== 'all' || patientSearchQuery !== '';
+                    
+                    // Hide empty rooms ONLY if we are actively filtering/searching
+                    if (isFiltering && filteredPatients.length === 0) return; 
+
+                    anyVisibleRooms = true;
+
                     const roomEl = document.createElement('div');
                     roomEl.className = 'room-section';
                     roomEl.innerHTML = `
                         <div class="room-header">
-                            <div class="room-title">${room.name}</div>
+                            <div class="room-title">${room.name} ${isFiltering ? `<span style="font-size:0.8rem; color:var(--text-muted); font-weight:normal;">(${filteredPatients.length} matches)</span>` : ''}</div>
                             <div class="room-actions">
                                 <button onclick="openNameModal('${room.id}')" style="padding: 4px 10px; margin-right: 8px; color: white; background: var(--primary); font-size: 1rem; border: none; border-radius: 8px; font-weight: bold;">+ Patient</button>
                                 <button onclick="toggleRoomCollapse('${room.id}')" style="padding: 4px 10px; color: var(--text-main); font-size: 1.1rem; border: 1px solid var(--divider); background: var(--surface); border-radius: 8px;">${room.collapsed ? '⬇️' : '⬆️'}</button>
@@ -1267,11 +1462,21 @@ if (!appData.settings.toolbar) {
                         <div class="room-content" data-room-id="${room.id}" style="display: ${room.collapsed ? 'none' : 'block'};"></div>
                     `;
                     const contentEl = roomEl.querySelector('.room-content');
-                    room.patients.forEach(p => contentEl.appendChild(createPatientCard(p)));
+                    filteredPatients.forEach(p => contentEl.appendChild(createPatientCard(p)));
                     container.appendChild(roomEl);
                 });
+
+                // Show a helpful message if filters hide everything
+                if (!anyVisibleRooms && appData.rooms.length > 0) {
+                    const noMatchMsg = document.createElement('div');
+                    noMatchMsg.style.textAlign = 'center';
+                    noMatchMsg.style.padding = '40px 20px';
+                    noMatchMsg.style.color = 'var(--text-muted)';
+                    noMatchMsg.innerHTML = '<i>No patients match the current filter/search.</i>';
+                    container.appendChild(noMatchMsg);
+                }
             }
-        }
+} 
 
         function createPatientCard(p) {
             const card = document.createElement('div');
