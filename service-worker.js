@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mirimate-v37';
+const CACHE_NAME = 'mirimate-v38'; // <-- Remember to bump this on every update!
 
 const ASSETS_TO_CACHE = [
     './',
@@ -13,11 +13,13 @@ const ASSETS_TO_CACHE = [
     './ddx.js'
 ];
 
-// Install — cache all app files
+// Install — cache all app files, explicitly bypassing the browser's HTTP cache
 self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(CACHE_NAME).then(cache => {
-            return cache.addAll(ASSETS_TO_CACHE);
+            // Map strings to Request objects with 'no-cache' to force a true network fetch
+            const requests = ASSETS_TO_CACHE.map(url => new Request(url, { cache: 'no-cache' }));
+            return cache.addAll(requests);
         })
     );
     self.skipWaiting();
@@ -30,10 +32,10 @@ self.addEventListener('activate', event => {
             .then(keys => {
                 return Promise.all(
                     keys.filter(key => key !== CACHE_NAME)
-                        .map(key => caches.delete(key)) // Deletes old versions like v33
+                        .map(key => caches.delete(key))
                 );
             })
-            .then(() => self.clients.claim())          // ← chained properly now
+            .then(() => self.clients.claim())
             .then(() => self.clients.matchAll())
             .then(clients => {
                 clients.forEach(client => {
@@ -45,8 +47,12 @@ self.addEventListener('activate', event => {
 
 // Fetch — serve from cache first, fall back to network
 self.addEventListener('fetch', event => {
-    const url = new URL(event.request.url);
+    // CRITICAL: Only cache GET requests. Let POST/PUT/DELETE pass right through to the network.
+    if (event.request.method !== 'GET') {
+        return;
+    }
 
+    const url = new URL(event.request.url);
     if (url.origin !== location.origin) {
         return;
     }
@@ -54,7 +60,7 @@ self.addEventListener('fetch', event => {
     event.respondWith(
         caches.match(event.request).then(cachedResponse => {
             if (cachedResponse) {
-                // Return from cache immediately, but fetch in the background to update the cache
+                // Return from cache immediately, fetch in the background to keep it fresh
                 fetch(event.request).then(networkResponse => {
                     if (networkResponse && networkResponse.status === 200) {
                         caches.open(CACHE_NAME).then(cache => {
