@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mirimate-v40'; // <-- Remember to bump this on every update!
+const CACHE_NAME = 'mirimate-v41'; // <-- Remember to bump this on every update!
 
 const ASSETS_TO_CACHE = [
     './',
@@ -10,7 +10,10 @@ const ASSETS_TO_CACHE = [
     './icon-maskable-512.png',
     './news.js',
     './labs.js',
-    './ddx.js'
+    './ddx.js', 
+    './install-instructions1.jpg',
+    './install-instructions2.jpg', 
+    './install-instructions3.jpg'
 ];
 
 // Install — cache all app files, explicitly bypassing the browser's HTTP cache
