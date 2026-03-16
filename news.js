@@ -1,6 +1,17 @@
-const LATEST_NEWS_INDEX = 5;
+const LATEST_NEWS_INDEX = 6;
 
 const NEWS_HTML = `
+<div style="background: var(--surface); border: 1px solid var(--divider); border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.04);">
+    <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">17 March 2026</div>
+    <div style="font-size: 1.25rem; font-weight: 800; color: var(--primary-dark); margin-bottom: 12px;">Quiz Me: Test Your Diagnostic Skills! ❓🧠</div>           
+    <div style="font-size: 1.05rem; color: var(--text-main); line-height: 1.5;">
+        <ul style="margin: 0; padding-left: 20px; margin-bottom: 14px; color: var(--text-muted);">
+            <li style="margin-bottom: 6px;"><strong>Where to find it:</strong> Open the <strong>DDx Search</strong> tool from the top toolbar, and tap the new floating <strong>💡 Quiz Me</strong> button at the bottom right of the screen.</li>
+            <li style="margin-bottom: 6px;"><strong>Dynamic Vignettes:</strong> Generate endless clinical scenarios based on demographics, risk factors, vitals, and labs. Choose your difficulty or play on 📈 Incremental mode!</li>
+            <li><strong>Learn from Mistakes:</strong> Got a question wrong? The hint button transforms into a <strong>🧠 See DDx</strong> button. Tap it to instantly load the vignette's exact features into the DDx Search tool and review the differentials!</li>
+        </ul>
+    </div>
+</div>
 <div style="background: var(--surface); border: 1px solid var(--divider); border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.04);">
     <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">16 March 2026</div>
     <div style="font-size: 1.25rem; font-weight: 800; color: var(--primary-dark); margin-bottom: 12px;">Smart Filters & Global Search 🔍</div>           
