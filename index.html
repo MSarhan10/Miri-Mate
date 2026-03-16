@@ -52,7 +52,7 @@
         body { margin: 0; padding: 0; background-color: var(--bg); color: var(--text-main); padding-bottom: 40px; }
 
         header {
-            background-color: var(--primary); color: white; padding: 16px 20px;
+            background-color: var(--primary); color: white; padding: 8px 20px;
             display: flex; justify-content: space-between; align-items: center;
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100;
         }
@@ -116,14 +116,18 @@
     opacity: 0; transform: translateY(20px) scale(0.8);
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     transform-origin: bottom right;
-    pointer-events: auto; /* FIX: Make items clickable */
+    pointer-events: none; /* FIX: Prevent clicks when hidden */
 }
 .fab-item:active { background: var(--divider); transform: scale(0.95) !important; }
 
 .fab-container.open .fab-menu { pointer-events: auto; }
-.fab-container.open .fab-item { opacity: 1; transform: translateY(0) scale(1); }
+.fab-container.open .fab-item { 
+    opacity: 1; transform: translateY(0) scale(1); 
+    pointer-events: auto; /* FIX: Enable clicks only when open */
+}
+.fab-item:nth-child(3) { transition-delay: 0.0s; } 
 .fab-item:nth-child(2) { transition-delay: 0.05s; } 
-.fab-item:nth-child(1) { transition-delay: 0.1s; }  
+.fab-item:nth-child(1) { transition-delay: 0.1s; }
 
 .fab-main {
     background: var(--primary); color: white; width: 64px; height: 64px;
@@ -736,6 +740,9 @@ html.modal-open, body.modal-open {
             <div class="fab-item" onclick="openManagePatients(); closeFab()">
                 <span style="font-size:1.1rem;">🛠️</span> Manage Patients
             </div>
+            <div class="fab-item" onclick="openAboutApp(); closeFab()">
+                <span style="font-size:1.1rem;">❔</span> About the App
+            </div>
         </div>
         <button class="fab-main" id="fab-main-btn" onclick="toggleFab()">✏️</button>
     </div>
@@ -969,54 +976,57 @@ html.modal-open, body.modal-open {
         <div class="lab-header">
             <button class="lab-header-close" onclick="closeNewsModal()">✕</button>
             <span style="font-weight:700; font-size:1.1rem;">📰 News</span>
-            <div style="display: flex; gap: 8px;">
-                <button class="lab-header-close" onclick="openHowToUse()" title="How to Use">❔</button>
-                <button class="lab-header-close" onclick="openSocials()" title="Socials">🌐</button>
-            </div>
+            <div style="width:38px;"></div>
         </div>
         
         <div style="flex-grow: 1; overflow-y: auto; padding: 16px; -webkit-overflow-scrolling: touch; background: var(--bg);">
-          
-<div id="news-content-container"></div>  
-                     
+            <div id="news-content-container"></div>  
         </div>
     </div>
-<!-- How to Use Modal -->
-    <div class="overlay" id="htu-overlay" onclick="closeHowToUse()" style="z-index: 2004;"></div>
-    <div class="center-modal" id="htu-modal" style="width: 90%; max-width: 450px; padding: 20px; z-index: 2005;">
-        <h2 style="color: var(--primary); margin-top: 0; margin-bottom: 15px;">📖 How to Use</h2>
-        <div style="max-height: 55vh; overflow-y: auto; padding-right: 5px;">
-            <div style="margin-bottom: 15px;">
-                <div style="font-weight: 800; color: var(--primary); font-size: 1.05rem; margin-bottom: 5px;">👥 Rooms & Patients</div>
-                <div style="font-size: 0.9rem; color: var(--text-main); line-height: 1.4;">Create rooms and add patients. Drag and drop patients using the <b>☰</b> icon to reorder them across rooms.</div>
-            </div>
-            <div style="margin-bottom: 15px;">
-                <div style="font-weight: 800; color: var(--primary); font-size: 1.05rem; margin-bottom: 5px;">❤️ Vitals Tracker</div>
-                <div style="font-size: 0.9rem; color: var(--text-main); line-height: 1.4;">Tap any vital box to enter values. Out-of-range vitals will pulse red automatically based on standard limits.</div>
-            </div>
-            <div style="margin-bottom: 15px;">
-                <div style="font-weight: 800; color: var(--primary); font-size: 1.05rem; margin-bottom: 5px;">✅ Task Manager</div>
-                <div style="font-size: 0.9rem; color: var(--text-main); line-height: 1.4;">Set normal or timed tasks. Swipe tasks <b>Left</b> to delete, or <b>Right</b> to complete. Timed tasks will beep when overdue!</div>
-            </div>
-            <div style="margin-bottom: 15px;">
-                <div style="font-weight: 800; color: var(--primary); font-size: 1.05rem; margin-bottom: 5px;">📝 Notes</div>
-                <div style="font-size: 0.9rem; color: var(--text-main); line-height: 1.4;">Tap <b>📝</b> on a patient to type rich-text case notes, reminders, and plans.</div>
-            </div>
-                        <div style="margin-bottom: 15px;">
-                <div style="font-weight: 800; color: var(--primary); font-size: 1.05rem; margin-bottom: 5px;">🛠️ Tools Toolbar</div>
-                <div style="font-size: 0.9rem; color: var(--text-main); line-height: 1.4;">
-  Access helpful tools directly from the scrollable toolbar under the main header. You can customize this toolbar (reorder, hide text, or hide tools) in <b>Settings ⚙️</b>.
-  <div style="padding-left: 5px; margin-top: 8px;">
-    🩺<b> Medscape AI:</b> Quick medical AI search.<br>
-    🧠<b> DDx Search:</b> Find differential diagnoses based on selected symptoms and labs.<br>
-    🔬<b> Lab Values:</b> A comprehensive clinical reference sheet.
-  </div>
-</div>
-</div>
 
+<!-- About the App Modal -->
+    <div class="center-modal" id="about-modal" style="width: 95%; max-width: 450px; padding: 0; display: none; flex-direction: column; overflow: hidden; border-radius: 20px;">
+        
+        <!-- Header -->
+        <div style="padding: 16px 20px; border-bottom: 1px solid var(--divider); display: flex; justify-content: space-between; align-items: center; background: var(--surface);">
+            <h2 style="color: var(--primary); margin: 0; font-size: 1.25rem;">❔ About App</h2>
+            <button onclick="startTutorial()" style="background: var(--bg); color: var(--primary); border: 1px solid var(--primary); padding: 6px 12px; border-radius: 8px; font-weight: 800; cursor: pointer; font-size: 0.85rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">🔄 Tutorial</button>
+        </div>
+        
+        <!-- Scrollable Body -->
+        <div style="padding: 20px; overflow-y: auto; max-height: 50vh; background: var(--bg);">
+            <div style="margin-bottom: 18px;">
+                <div style="font-weight: 800; color: var(--text-main); font-size: 1rem; margin-bottom: 4px;">👥 Patients & Search</div>
+                <div style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.4;">Add rooms and patients. Use the top <b>🔎 filter bar</b> to search or view specific groups. Drag & drop (<b>☰</b>) in Manage Patients to reorder.</div>
+            </div>
+            <div style="margin-bottom: 18px;">
+                <div style="font-weight: 800; color: var(--text-main); font-size: 1rem; margin-bottom: 4px;">❤️ Vitals & Trends</div>
+                <div style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.4;">Tap any vital to open the smart numpad. Abnormal values automatically pulse red. Tap a vital to instantly view its <b>Trend History</b>.</div>
+            </div>
+            <div style="margin-bottom: 18px;">
+                <div style="font-weight: 800; color: var(--text-main); font-size: 1rem; margin-bottom: 4px;">✅ Task Manager</div>
+                <div style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.4;">Create standard or timed tasks. <b>Emergent tasks</b> will trigger alerts. <b>Swipe Left</b> to delete, or <b>Swipe Right</b> to complete.</div>
+            </div>
+            <div style="margin-bottom: 18px;">
+                <div style="font-weight: 800; color: var(--text-main); font-size: 1rem; margin-bottom: 4px;">🛠️ Clinical Tools</div>
+                <div style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.4;">The top toolbar gives quick access to Medscape AI, DDx Search, and Labs. <b>You can customize this toolbar in Settings.</b></div>
+            </div>
+            <div style="margin-bottom: 5px;">
+                <div style="font-weight: 800; color: var(--text-main); font-size: 1rem; margin-bottom: 4px;">💾 Offline & Backups</div>
+                <div style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.4;">MiriMate runs <b>completely offline.</b> Export your data as a backup file directly from the Settings menu.</div>
+            </div>
+        </div>
 
-</div>
+        <!-- Fixed Footer -->
+        <div style="padding: 16px 20px; border-top: 1px solid var(--divider); background: var(--surface); text-align: center;">
+            <div style="font-size: 0.95rem; font-weight: 800; color: var(--primary); margin-bottom: 12px;">
+                Socials aren't available yet, stay tuned! 🚀
+            </div>
+            
+        </div>
     </div>
+</div>
+
 
 <!-- First Time Tutorial Overlay -->
     <div id="tutorial-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:9999; pointer-events:auto; overflow:hidden;">
@@ -1192,7 +1202,16 @@ html.modal-open, body.modal-open {
         window.onload = () => {
             loadData();
             renderUI();
-            document.getElementById('news-content-container').innerHTML = NEWS_HTML;
+            
+            // Fix: Wrap external data injection to prevent startup crashes
+            try {
+                if (typeof NEWS_HTML !== 'undefined') {
+                    document.getElementById('news-content-container').innerHTML = NEWS_HTML;
+                } else {
+                    document.getElementById('news-content-container').innerHTML = "<div style='padding:20px; text-align:center; color:var(--text-muted);'>No internet connection. Cannot load the latest news.</div>";
+                }
+            } catch(e){}
+
             startTimers();
             setTimeout(() => { 
                 checkOverdueTasks(); 
@@ -1200,7 +1219,6 @@ html.modal-open, body.modal-open {
             }, 800);
             checkNewsBadge();
             
-            // Check standalone local storage so BOTH new and old users see it once
             const tutorialShown = localStorage.getItem('mirimate_tutorial_shown');
             if (!tutorialShown || tutorialShown === 'false') {
                 setTimeout(startTutorial, 600); 
@@ -2251,77 +2269,82 @@ function toggleFab() {
         }
 
         function closeModals() {
-closeFab();
-    unlockScroll();
-    document.getElementById('main-overlay').style.opacity = '0';
-    setTimeout(() => document.getElementById('main-overlay').style.display = 'none', 300);
-    document.querySelectorAll('.center-modal').forEach(m => {
-        m.style.opacity = '0'; m.style.transform = 'translate(-50%, -50%) scale(0.9)';
-        setTimeout(() => m.style.display = 'none', 300);
-    });
-    
-    // Updated sheets to close (removed the old deleted menus, added the new manage menu)
-    document.getElementById('numpad-sheet').style.bottom = '-200%';
-    document.getElementById('manage-patients-sheet').style.bottom = '-200%'; 
-    document.getElementById('all-tasks-sheet').style.bottom = '-200%';
-    document.getElementById('overdue-tasks-sheet').style.bottom = '-200%';
-    document.getElementById('customize-toolbar-sheet').style.bottom = '-200%';
-    
-    document.getElementById('notes-modal').style.display = 'none';
-    document.getElementById('news-modal').style.display = 'none';
-    activeRoomId = null;
-}
+            try { closeFab(); } catch(e){}
+            try { unlockScroll(); } catch(e){}
+            
+            const mainOverlay = document.getElementById('main-overlay');
+            if (mainOverlay) {
+                mainOverlay.style.opacity = '0';
+                setTimeout(() => mainOverlay.style.display = 'none', 300);
+            }
+            
+            document.querySelectorAll('.center-modal').forEach(m => {
+                m.style.opacity = '0'; m.style.transform = 'translate(-50%, -50%) scale(0.9)';
+                setTimeout(() => m.style.display = 'none', 300);
+            });
+            
+            // Close all bottom sheets safely
+            const sheets = ['numpad-sheet', 'manage-patients-sheet', 'all-tasks-sheet', 'overdue-tasks-sheet', 'customize-toolbar-sheet'];
+            sheets.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.bottom = '-200%';
+            });
+            
+            // Close all full-screen modals safely
+            const fullModals = ['notes-modal', 'news-modal', 'lab-modal', 'ddx-modal'];
+            fullModals.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = 'none';
+            });
+            
+            const ddxOverlay = document.getElementById('ddx-sheet-overlay');
+            if (ddxOverlay) {
+                ddxOverlay.style.opacity = '0';
+                setTimeout(() => ddxOverlay.style.display = 'none', 300);
+            }
+            
+            activeRoomId = null;
+        }
 
 function checkNewsBadge() {
-            const badge = document.getElementById('news-badge');
-            if (badge) {
-                if (LATEST_NEWS_INDEX > (appData.settings.savedNewsIndex || 0)) {
-                    badge.style.display = 'block';
-                } else {
-                    badge.style.display = 'none';
+            try {
+                const badge = document.getElementById('news-badge');
+                if (badge && typeof LATEST_NEWS_INDEX !== 'undefined') {
+                    if (LATEST_NEWS_INDEX > (appData.settings.savedNewsIndex || 0)) {
+                        badge.style.display = 'block';
+                    } else {
+                        badge.style.display = 'none';
+                    }
                 }
-            }
+            } catch(e) {}
         }
 
         function openNewsModal() {
             closeModals(); 
-            lockScroll(); // Lock again after closeModals cleared it
-            appData.settings.savedNewsIndex = LATEST_NEWS_INDEX;
-            saveData();
-            checkNewsBadge();
-            document.getElementById('news-modal').style.display = 'flex';
+            lockScroll(); 
+            try {
+                if (typeof LATEST_NEWS_INDEX !== 'undefined') {
+                    appData.settings.savedNewsIndex = LATEST_NEWS_INDEX;
+                    saveData();
+                    checkNewsBadge();
+                }
+            } catch(e) { console.error(e); }
+            const modal = document.getElementById('news-modal');
+            if (modal) modal.style.display = 'flex';
         }
 
         function closeNewsModal() {
-            unlockScroll();
-            document.getElementById('news-modal').style.display = 'none';
+            closeModals();
         }
 
-        function openHowToUse() {
-            document.body.style.overflow = 'hidden'; // Lock background
-            const overlay = document.getElementById('htu-overlay');
-            overlay.style.display = 'block';
-            setTimeout(() => overlay.style.opacity = '1', 10);
-
-            const modal = document.getElementById('htu-modal');
-            modal.style.display = 'block';
-            setTimeout(() => { modal.style.opacity = '1'; modal.style.transform = 'translate(-50%, -50%) scale(1)'; }, 10);
-        }
-
-        function closeHowToUse() {
-            document.body.style.overflow = ''; // Unlock background
-            const modal = document.getElementById('htu-modal');
-            modal.style.opacity = '0';
-            modal.style.transform = 'translate(-50%, -50%) scale(0.9)';
-            setTimeout(() => modal.style.display = 'none', 300);
-
-            const overlay = document.getElementById('htu-overlay');
-            overlay.style.opacity = '0';
-            setTimeout(() => overlay.style.display = 'none', 300);
-        }
-
-        function openSocials() {
-            showToast("Socials aren't available yet, stay tuned! 🚀");
+        function openAboutApp() {
+            showOverlay(); 
+            const modal = document.getElementById('about-modal'); 
+            modal.style.display = 'flex';
+            setTimeout(() => { 
+                modal.style.opacity = '1'; 
+                modal.style.transform = 'translate(-50%, -50%) scale(1)'; 
+            }, 10);
         }
 
         // =============================================
@@ -2796,14 +2819,15 @@ function toggleRoomCollapse(roomId) {
         function openLabValues() {
             closeModals();
             lockScroll(); 
-            document.getElementById('lab-search-input').value = '';
-            renderLabValues('');
-            document.getElementById('lab-modal').style.display = 'flex';
+            const searchInput = document.getElementById('lab-search-input');
+            if (searchInput) searchInput.value = '';
+            try { renderLabValues(''); } catch(e) { console.error(e); }
+            const modal = document.getElementById('lab-modal');
+            if (modal) modal.style.display = 'flex';
         }
 
         function closeLabValues() {
-            unlockScroll();
-            document.getElementById('lab-modal').style.display = 'none';
+            closeModals();
         }
 
         function renderLabValues(filter) {
@@ -3013,17 +3037,19 @@ let ddxSelectedSymptoms = [];
 function openDDx() {
             closeModals();
             lockScroll(); 
-            document.getElementById('ddx-search-input').value = '';
+            const searchInput = document.getElementById('ddx-search-input');
+            if (searchInput) searchInput.value = '';
             ddxActiveSystem = null;
-            renderDdxSystems();
-            updateDdxResults();
-            document.getElementById('ddx-modal').style.display = 'flex';
+            try {
+                renderDdxSystems();
+                updateDdxResults();
+            } catch(e) { console.error(e); }
+            const modal = document.getElementById('ddx-modal');
+            if (modal) modal.style.display = 'flex';
         }
 
         function closeDDx() {
-            unlockScroll();
-            document.getElementById('ddx-modal').style.display = 'none';
-            closeDdxSymptomsModal();
+            closeModals();
         }
 
 function toggleDdxSystem(sysId) {
@@ -3375,7 +3401,28 @@ const tutorialSteps = [
     { target: '#fab-main-btn', title: '✏️ Edit & Manage', text: 'This is the edit button. Here you can add, reorder, and delete rooms and patients, or copy & reset vitals.', shape: 'circle' },
     { target: '#main-toolbar', title: '🛠️ Main Toolbar', text: 'Quickly access tools like Medscape, DDx, and Labs. You can customize this toolbar in Settings.', shape: 'rect' },
     { target: '#header-news-btn', title: '📰 News & Updates', text: 'Check this button to keep up with all our latest app updates and new features.', shape: 'circle' },
-    { target: '#header-settings-btn', title: '⚙️ Settings', text: 'Choose your theme, adjust copy options, or export and import your data for backups.', shape: 'circle' }
+    { target: '#header-settings-btn', title: '⚙️ Settings', text: 'Choose your theme, adjust copy options, or export and import your data for backups.', shape: 'circle' },
+    { 
+        target: null, // No target, so the spotlight hides and the box centers
+        title: '📲 Install & Use Offline', 
+        shape: 'none',
+        text: `
+        <div style="text-align: left; font-size: 0.95rem; max-height: 55vh; overflow-y: auto; padding-right: 5px; line-height: 1.5; font-weight: normal;">
+            <div style="margin-bottom: 15px;">
+                <b>1.</b> Tap your browser's <b>Menu</b> button.
+                <img src="install-instructions1.jpg" style="width: 100%; border-radius: 8px; margin-top: 6px; border: 1px solid var(--divider); display: block;">
+            </div>
+            <div style="margin-bottom: 15px;">
+                <b>2.</b> Scroll down and tap <b>Add to Home Screen</b> or <b>Install App</b>.
+                <img src="install-instructions2.jpg" style="width: 100%; border-radius: 8px; margin-top: 6px; border: 1px solid var(--divider); display: block;">
+            </div>
+            <div style="margin-bottom: 10px;">
+                <b>3.</b> Confirm by tapping <b>Install</b> or <b>Add</b>.
+                <img src="install-instructions3.jpg" style="width: 100%; border-radius: 8px; margin-top: 6px; border: 1px solid var(--divider); display: block;">
+            </div>
+        </div>
+        `
+    }
 ];
 
 function startTutorial() {
@@ -3386,33 +3433,47 @@ function startTutorial() {
     setTimeout(showTutorialStep, 300); // Wait for UI to settle
 }
 
-function showTutorialStep() {
+  function showTutorialStep() {
     const step = tutorialSteps[tutorialStep];
-    const targetEl = document.querySelector(step.target);
+    const targetEl = step.target ? document.querySelector(step.target) : null;
     const highlight = document.getElementById('tutorial-highlight');
     const box = document.getElementById('tutorial-box');
 
-    if (!targetEl) { nextTutorialStep(); return; } // Skip if element not found
+    // Skip if a target was specified but doesn't exist on screen
+    if (step.target && !targetEl) { nextTutorialStep(); return; }
 
-    const rect = targetEl.getBoundingClientRect();
-    const pad = step.shape === 'circle' ? 10 : 4;
-    
-    highlight.style.width = (rect.width + pad*2) + 'px';
-    highlight.style.height = (rect.height + pad*2) + 'px';
-    highlight.style.top = (rect.top - pad) + 'px';
-    highlight.style.left = (rect.left - pad) + 'px';
-    highlight.style.borderRadius = step.shape === 'circle' ? '50%' : '12px';
+    if (targetEl) {
+        // Show spotlight for standard elements
+        highlight.style.display = 'block';
+        const rect = targetEl.getBoundingClientRect();
+        const pad = step.shape === 'circle' ? 10 : 4;
+        
+        highlight.style.width = (rect.width + pad*2) + 'px';
+        highlight.style.height = (rect.height + pad*2) + 'px';
+        highlight.style.top = (rect.top - pad) + 'px';
+        highlight.style.left = (rect.left - pad) + 'px';
+        highlight.style.borderRadius = step.shape === 'circle' ? '50%' : '12px';
+
+        // Move box up or down so it doesn't cover the spotlight
+        if (rect.top > window.innerHeight / 2) {
+            box.style.top = '15%'; box.style.bottom = 'auto';
+        } else {
+            box.style.top = 'auto'; box.style.bottom = '15%';
+        }
+    } else {
+        // Hide spotlight for the final installation screen
+        highlight.style.display = 'none';
+        box.style.top = '10%'; // Give it maximum vertical room for images
+        box.style.bottom = 'auto';
+    }
+
+    box.style.left = '50%'; 
+    box.style.transform = 'translateX(-50%)';
 
     document.getElementById('tutorial-title').innerText = step.title;
-    document.getElementById('tutorial-text').innerText = step.text;
-
-    // Move box up or down so it doesn't cover the spotlight
-    if (rect.top > window.innerHeight / 2) {
-        box.style.top = '15%'; box.style.bottom = 'auto';
-    } else {
-        box.style.top = 'auto'; box.style.bottom = '15%';
-    }
-    box.style.left = '50%'; box.style.transform = 'translateX(-50%)';
+    
+    // Changed to innerHTML to allow images and formatting to render
+    document.getElementById('tutorial-text').innerHTML = step.text;
 
     document.getElementById('tutorial-next-btn').innerText = (tutorialStep === tutorialSteps.length - 1) ? "Finish ✔" : "Next ➔";
 }
