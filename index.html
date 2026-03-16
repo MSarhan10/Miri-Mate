@@ -3101,6 +3101,13 @@ function renderDdxSymptomsPanel(sysId, filterText = '') {
     };
 
     let html = '';
+    // NEW: Added Demographics and Vitals
+    html += renderGroup("Age", data.age);
+    html += renderGroup("Gender", data.gender);
+    html += renderGroup("Onset", data.onset);
+    html += renderGroup("Vitals", data.vitals);
+    html += renderGroup("Risk Factors", data.riskFactors);
+    
     html += renderGroup("Patient Symptoms", data.symptoms);
     html += renderGroup("Clinical Signs", data.signs);
     html += renderGroup("Labs", data.labs);
@@ -3111,6 +3118,140 @@ function renderDdxSymptomsPanel(sysId, filterText = '') {
     } else {
         html = html.replace('style="margin-top:15px;"', '');
     }
+
+    container.innerHTML = html;
+}
+
+function updateDdxResults() {
+    renderDdxActiveChips();
+    const container = document.getElementById('ddx-results-content');
+    const query = document.getElementById('ddx-search-input').value.toLowerCase().trim();
+
+    if (ddxSelectedSymptoms.length === 0 && query === "") {
+        container.innerHTML = `<div class="lab-no-results">Choose some symptoms or write something to see results 🔍</div>`;
+        return;
+    }
+
+    // Filter, Score, Sort, and Slice
+    const results = DDX_DATA.diseases
+        .filter(disease => !query || disease.name.toLowerCase().includes(query))
+        .map(disease => {
+            const demoMatches = (disease.demographics || []).filter(f => ddxSelectedSymptoms.includes(f));
+            const keyMatches = disease.keyFeatures.filter(f => ddxSelectedSymptoms.includes(f));
+            const possibleMatches = disease.possibleFeatures.filter(f => ddxSelectedSymptoms.includes(f));
+            const labMatches = (disease.labs || []).filter(f => ddxSelectedSymptoms.includes(f));
+            const radMatches = (disease.radiology || []).filter(f => ddxSelectedSymptoms.includes(f));
+            
+            const totalMatches = demoMatches.length + keyMatches.length + possibleMatches.length + labMatches.length + radMatches.length;
+            const score = demoMatches.length + (keyMatches.length * 2) + possibleMatches.length + labMatches.length + radMatches.length;
+            
+            return { ...disease, demoMatches, keyMatches, possibleMatches, labMatches, radMatches, totalMatches, score };
+        })
+        .filter(d => (query && d.name.toLowerCase().includes(query)) || d.totalMatches > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 10);
+
+    if (results.length === 0) {
+        container.innerHTML = `<div class="lab-no-results">No matches found for your criteria.</div>`;
+        return;
+    }
+
+    const formatCompactList = (features, matchedArr) => {
+        if (!features || features.length === 0) return `<div class="ddx-compact-list"><span class="normal">None specified</span></div>`;
+        const items = features.map(f => {
+            const isMatched = matchedArr.includes(f);
+            return isMatched ? `<span class="matched">${f}</span>` : `<span class="normal">${f}</span>`;
+        });
+        return `<div class="ddx-compact-list">${items.join('<span class="ddx-compact-separator">-</span>')}</div>`;
+    };
+
+    // Custom Formatter for Demographics Block
+    const formatDemographics = (demoArray, matchedArr) => {
+        if (!demoArray || demoArray.length === 0) return '';
+        
+        const highlight = (val) => matchedArr.includes(val) ? `<span class="matched">${val}</span>` : `<span class="normal">${val}</span>`;
+        
+        const ageData = DDX_DATA.symptoms.demo.age;
+        const genderData = DDX_DATA.symptoms.demo.gender;
+        const onsetData = DDX_DATA.symptoms.demo.onset;
+        const vitalsData = DDX_DATA.symptoms.demo.vitals;
+        const riskData = DDX_DATA.symptoms.demo.riskFactors;
+        
+        let ages = demoArray.filter(x => ageData.includes(x));
+        let genders = demoArray.filter(x => genderData.includes(x));
+        let onsets = demoArray.filter(x => onsetData.includes(x));
+        let vitals = demoArray.filter(x => vitalsData.includes(x));
+        let risks = demoArray.filter(x => riskData.includes(x));
+        
+        // --- Smart Age Merging Logic ---
+        let ageStr = '';
+        let isAgeMatched = ages.some(a => matchedArr.includes(a));
+        
+        if (ages.length === 5) ageStr = "Any age";
+        else if (ages.includes("Young Adult (18-35y)") && ages.includes("Middle-aged (36-55y)") && ages.includes("Elderly (>55y)") && ages.length === 3) ageStr = "Adults (>18y)";
+        else if (ages.includes("Middle-aged (36-55y)") && ages.includes("Elderly (>55y)") && ages.length === 2) ageStr = "Adults (>36y)";
+        else if (ages.includes("Neonate (<1m)") && ages.includes("Pediatric (1m-18y)") && ages.length === 2) ageStr = "Children (<18y)";
+        else if (ages.includes("Young Adult (18-35y)") && ages.includes("Middle-aged (36-55y)") && ages.length === 2) ageStr = "Adults (18-55y)";
+        else if (ages.length > 0) ageStr = ages.map(a => a.split(' (')[0]).join(', '); // Cleans up the parenthesis if standalone
+        else ageStr = "Any";
+        
+        let formattedAge = isAgeMatched ? `<span class="matched">${ageStr}</span>` : `<span class="normal">${ageStr}</span>`;
+
+        // --- Gender Logic ---
+        let genderStr = '';
+        if (genders.length === 2) {
+            const isMatched = genders.some(g => matchedArr.includes(g));
+            genderStr = isMatched ? `<span class="matched">Both</span>` : `<span class="normal">Both</span>`;
+        } else if (genders.length === 1) {
+            genderStr = highlight(genders[0]);
+        } else {
+            genderStr = `<span class="normal">Any</span>`;
+        }
+        
+        // --- Onset Logic ---
+        let onsetStr = '';
+        if (onsets.length >= 3) {
+            const isMatched = onsets.some(o => matchedArr.includes(o));
+            onsetStr = isMatched ? `<span class="matched">Any</span>` : `<span class="normal">Any</span>`;
+        } else if (onsets.length > 0) {
+            onsetStr = onsets.map(o => highlight(o)).join(' <span class="normal">or</span> ');
+        } else {
+            onsetStr = `<span class="normal">Any</span>`;
+        }
+        
+        // --- Final Assembly ---
+        let parts = [];
+        parts.push(`<span style="color:var(--text-main); font-weight:700;">Age:</span> ${formattedAge}`);
+        parts.push(`<span style="color:var(--text-main); font-weight:700;">Gender:</span> ${genderStr}`);
+        parts.push(`<span style="color:var(--text-main); font-weight:700;">Onset:</span> ${onsetStr}`);
+        
+        if (vitals.length > 0) {
+            parts.push(`<span style="color:var(--text-main); font-weight:700;">Vitals:</span> ${vitals.map(v => highlight(v)).join(', ')}`);
+        }
+        if (risks.length > 0) {
+            parts.push(`<span style="color:var(--text-main); font-weight:700;">Risk Factors:</span> ${risks.map(r => highlight(r)).join(', ')}`);
+        }
+        
+        return `<div class="ddx-compact-list" style="margin-bottom: 8px;">${parts.join(' <span class="ddx-compact-separator" style="color: var(--text-muted); opacity: 0.5;">-</span> ')}</div>`;
+    };
+
+    let html = '';
+    results.forEach(d => {
+        const matchBadge = d.totalMatches > 0 ? `<div class="ddx-score-badge">🎯 ${d.totalMatches} Matches</div>` : '';
+        html += `<div class="ddx-disease-card">
+            <div class="ddx-disease-title">${d.name} ${matchBadge}</div>
+            
+            ${d.demographics && d.demographics.length > 0 ? `<div class="ddx-feat-title">🧑‍⚕️ Demographics & Risks</div>` + formatDemographics(d.demographics, d.demoMatches) : ''}
+            
+            <div class="ddx-feat-title">🔑 Key Features</div>
+            ${formatCompactList(d.keyFeatures, d.keyMatches)}
+            <div class="ddx-feat-title">📋 Possible Features</div>
+            ${formatCompactList(d.possibleFeatures, d.possibleMatches)}
+            ${d.labs && d.labs.length > 0 ? `<div class="ddx-feat-title">🧪 Labs</div>` + formatCompactList(d.labs, d.labMatches) : ''}
+            ${d.radiology && d.radiology.length > 0 ? `<div class="ddx-feat-title">🩻 Radiology</div>` + formatCompactList(d.radiology, d.radMatches) : ''}
+            ${d.medscapeLink ? `<div style="display: flex; justify-content: flex-end; margin-top: 12px;"><a href="${d.medscapeLink}" target="_blank" class="ddx-medscape-link" style="font-size: 0.75rem; padding: 5px 10px; margin-top: 0;">🔗 Medscape</a></div>` : ''}
+        </div>`;
+    });
 
     container.innerHTML = html;
 }
@@ -3150,70 +3291,7 @@ function closeDdxSymptomsModal() {
 
         
 
-        function updateDdxResults() {
-            renderDdxActiveChips();
-            const container = document.getElementById('ddx-results-content');
-            const query = document.getElementById('ddx-search-input').value.toLowerCase().trim();
-
-            if (ddxSelectedSymptoms.length === 0 && query === "") {
-                container.innerHTML = `<div class="lab-no-results">Choose some symptoms or write something to see results 🔍</div>`;
-                return;
-            }
-
-            // Filter, Score, Sort, and Slice in one pipeline for performance
-            const results = DDX_DATA.diseases
-                .filter(disease => !query || disease.name.toLowerCase().includes(query))
-                .map(disease => {
-                    const keyMatches = disease.keyFeatures.filter(f => ddxSelectedSymptoms.includes(f));
-                    const possibleMatches = disease.possibleFeatures.filter(f => ddxSelectedSymptoms.includes(f));
-                    const labMatches = (disease.labs || []).filter(f => ddxSelectedSymptoms.includes(f));
-                    const radMatches = (disease.radiology || []).filter(f => ddxSelectedSymptoms.includes(f));
-                    
-                    const totalMatches = keyMatches.length + possibleMatches.length + labMatches.length + radMatches.length;
-                    const score = (keyMatches.length * 2) + possibleMatches.length + labMatches.length + radMatches.length;
-                    
-                    return { ...disease, keyMatches, possibleMatches, labMatches, radMatches, totalMatches, score };
-                })
-                .filter(d => (query && d.name.toLowerCase().includes(query)) || d.totalMatches > 0)
-                .sort((a, b) => b.score - a.score)
-                .slice(0, 10); // Only process and show the top 10
-
-            if (results.length === 0) {
-                container.innerHTML = `<div class="lab-no-results">No matches found for your criteria.</div>`;
-                return;
-            }
-
-            const formatCompactList = (features, matchedArr) => {
-                if (!features || features.length === 0) return `<div class="ddx-compact-list"><span class="normal">None specified</span></div>`;
-                const items = features.map(f => {
-                    const isMatched = matchedArr.includes(f);
-                    return isMatched ? `<span class="matched">${f}</span>` : `<span class="normal">${f}</span>`;
-                });
-                return `<div class="ddx-compact-list">${items.join('<span class="ddx-compact-separator">-</span>')}</div>`;
-            };
-
-            let html = '';
-            results.forEach(d => {
-                const matchBadge = d.totalMatches > 0 ? `<div class="ddx-score-badge">🎯 ${d.totalMatches} Matches</div>` : '';
-                html += `<div class="ddx-disease-card">
-                    <div class="ddx-disease-title">${d.name} ${matchBadge}</div>
-                    <div class="ddx-feat-title">🔑 Key Features</div>
-                    ${formatCompactList(d.keyFeatures, d.keyMatches)}
-                    <div class="ddx-feat-title">📋 Possible Features</div>
-                    ${formatCompactList(d.possibleFeatures, d.possibleMatches)}
-                    ${d.labs && d.labs.length > 0 ? `<div class="ddx-feat-title">🧪 Labs</div>` + formatCompactList(d.labs, d.labMatches) : ''}
-                    ${d.radiology && d.radiology.length > 0 ? `<div class="ddx-feat-title">🩻 Radiology</div>` + formatCompactList(d.radiology, d.radMatches) : ''}
-                    ${d.medscapeLink ? `<div style="display: flex; justify-content: flex-end; margin-top: 12px;"><a href="${d.medscapeLink}" target="_blank" class="ddx-medscape-link" style="font-size: 0.75rem; padding: 5px 10px; margin-top: 0;">🔗 Medscape</a></div>` : ''}
-                </div>`;
-            });
-
-            container.innerHTML = html;
-        }
-
-       
-          
-
-
+        
         function renderDdxSystems() {
             const bar = document.getElementById('ddx-systems-bar');
             bar.innerHTML = '';
