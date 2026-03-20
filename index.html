@@ -1177,19 +1177,24 @@ html.modal-open, body.modal-open {
         <h2 style="color: var(--primary); margin-bottom: 10px; width: 100%;">☕ Support MiriMate</h2>
         
         <p style="font-size: 0.95rem; color: var(--text-main); margin-bottom: 15px; line-height: 1.5; font-weight: 500;">
-            Thank you for using MiriMate! Your support helps keep the app ad-free and continuously improving. ❤️
+            Thank you for using MiriMate! Your support helps keep the app continuously improving. ❤️
         </p>
         
         <!-- White background to ensure QR code is scannable even in Dark Mode -->
         <div style="background: white; padding: 12px; border-radius: 16px; display: flex; justify-content: center; align-items: center; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-            <img src="insta.png" alt="InstaPay QR Code" style="width: 200px; height: 200px; display: block; border-radius: 8px;">
+            <img src="insta.png" alt="InstaPay QR Code" style="width: 180px; height: 180px; display: block; border-radius: 8px;">
         </div>
         
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px; font-weight: 600;">
-            📸 Scan the QR code above using your banking app or InstaPay to send your support.
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px; font-weight: 600; line-height: 1.4;">
+            📸 Scan the QR code above or click the button below to support us directly.
         </p>
         
-        <button class="btn-secondary" onclick="closeModals()" style="width: 100%; margin: 0;">Close</button>
+        <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
+            <button class="btn-main" onclick="window.open('https://ipn.eg/S/msarhan10/instapay/3AaZpS', '_blank')" style="margin: 0; display: flex; align-items: center; justify-content: center; gap: 8px; background: #6366f1; border-color: #4f46e5;">
+                <span style="font-size: 1.2rem;">🔗</span> Open InstaPay
+            </button>
+            <button class="btn-secondary" onclick="closeModals()" style="margin: 0;">Close</button>
+        </div>
     </div>
 
 <!-- First Time Tutorial Overlay -->
