@@ -4197,7 +4197,6 @@ let isQuizAnswered = true;    // Tracks if a question is active or pending
             availableHints = availableHints.sort(() => 0.5 - Math.random());
 
 // 8. Build Sentences
-            // Generates a specific age like "7yo" or "14-month-old" instead of "2 - 12 years"
             let ageStr = ageCat ? getQuizAgeNum(ageCat) : "45yo"; 
             let genderStr = gender ? gender.toLowerCase() : "";
             
@@ -4213,17 +4212,34 @@ let isQuizAnswered = true;    // Tracks if a question is active or pending
                 return arr.slice(0, -1).join(", ") + ", and " + arr[arr.length - 1];
             };
 
+            // NEW: Deduplication filter - removes "cough" if "productive cough" is also present
+            const deduplicateFeatures = (arr) => {
+                return arr.filter((item, idx) => {
+                    return !arr.some((other, otherIdx) => 
+                        idx !== otherIdx && 
+                        other.toLowerCase().includes(item.toLowerCase())
+                    );
+                });
+            };
+
             if (selectedRisks.length > 0) {
-                subject += ` with ${formatList(selectedRisks)}`;
+                subject += ` with ${formatList(deduplicateFeatures(selectedRisks))}`;
             }
             
-            let onsetStr = onset ? `${onset} ` : "";
+            let onsetStr = onset ? `${onset.toLowerCase()} ` : "";
             let presentFeats = [...selectedKey, ...selectedNonSpec];
+            
+            // Apply deduplication to the symptoms
+            presentFeats = deduplicateFeatures(presentFeats);
             
             let caseText = `${subject}, complains of ${onsetStr}${formatList(presentFeats)}. `;
             
             // Combine Labs and Radiology into a single array for a unified sentence
             let investigations = [...selectedLabs, ...selectedRads];
+            
+            // Apply deduplication to the investigations
+            investigations = deduplicateFeatures(investigations);
+            
             if (investigations.length > 0) {
                 caseText += `Investigations revealed ${formatList(investigations)}. `;
             }
