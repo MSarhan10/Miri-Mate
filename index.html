@@ -742,26 +742,50 @@ html.modal-open, body.modal-open {
 .quiz-shake {
     animation: milestoneShake 0.6s ease-in-out;
 }
-
-/* --- ADD THIS MISSING CSS FOR THE CONFLICT SHAKE --- */
-@keyframes shake-conflict {
-    0%, 100% { transform: translateX(0); }
-    20%, 60% { transform: translateX(-5px); }
-    40%, 80% { transform: translateX(5px); }
+/* --- ENCOURAGEMENT FLASH ANIMATION (Golden Badge Edition) --- */
+.quiz-encouragement {
+    position: fixed;
+    top: 45%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    
+    /* Text Styling */
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: #d97706; /* Deep Amber/Gold for contrast */
+    text-align: center;
+    white-space: nowrap;
+    
+    /* The Rounded Rectangle */
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(8px); /* Blurs content behind for a glassy look */
+    -webkit-backdrop-filter: blur(8px);
+    padding: 12px 28px;
+    border-radius: 50px; /* Fully rounded pill shape */
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 0;
+    animation: flash-pop 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
-.ddx-symp-chip.conflict {
-    background: #fee2e2 !important;
-    color: #b91c1c !important;
-    border-color: #ef4444 !important;
-    animation: shake-conflict 0.4s ease-in-out;
+:root[data-theme="dark"] .quiz-encouragement {
+    color: #fbbf24; /* Brighter Gold for Dark Mode */
+    background: rgba(255, 255, 255, 0.15); /* Slightly dimmer on dark */
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
 }
 
-:root[data-theme="dark"] .ddx-symp-chip.conflict {
-    background: #450a0a !important;
-    color: #fca5a5 !important;
-    border-color: #ef4444 !important;
+@keyframes flash-pop {
+    0% { transform: translate(-50%, -50%) scale(0.7); opacity: 0; }
+    15% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+    85% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(1.1); opacity: 0; }
 }
+
+
 
 .ddx-medscape-link {
     display: inline-block;
@@ -3894,6 +3918,53 @@ let availableHints = [];
 let currentQuizFeatures = []; // Stores the exact data used for the current question
 let isQuizAnswered = true;    // Tracks if a question is active or pending
 
+// --- QUIZ ENCOURAGEMENTS ARRAY (Medical Pop Culture Edition) ---
+const QUIZ_ENCOURAGEMENTS = [
+"😗 Not Impressed", 
+    "🌟 Good!",    
+         "🌡️ Normal Range!",       
+    "😎 Awesome!",                
+    "🎯 Spot On!",             
+"🔥 On Fire!",              
+"🚑 Rapid Response!",         
+ "💉 Smooth Operator!",        
+"🤓 GCS 15!",                 
+"🧠 Gray Matter!",            
+"📚 High Yield!",              
+"✨ Pathognomonic!",         
+"🥷 Ninja Nerd!",          
+"🏥 The Good Doctor ",               
+    "🩺 Dr. House! ",        
+    "🚀 UpToDate!",               
+    "👑 Attending Vibes!",        
+    "🏆 Board Certified!",       
+    "🎖️ Chief Resident!", 
+    "🧑‍⚕️ Medical Icon!"   
+];
+
+function triggerEncouragement(streak) {
+    // Determine which milestone we are on (1st milestone = index 0)
+    let milestoneIndex = Math.floor(streak / 5) - 1;
+    
+    // If we exceed the array length, cycle through the last 5 items continuously
+    if (milestoneIndex >= QUIZ_ENCOURAGEMENTS.length) {
+        const last5Start = QUIZ_ENCOURAGEMENTS.length - 5;
+        const overflow = milestoneIndex - QUIZ_ENCOURAGEMENTS.length;
+        milestoneIndex = last5Start + (overflow % 5);
+    }
+    
+    // Create the flashing text element
+    const el = document.createElement('div');
+    el.className = 'quiz-encouragement';
+    el.innerText = QUIZ_ENCOURAGEMENTS[milestoneIndex];
+    document.body.appendChild(el);
+    
+    // Remove it from the DOM after the 1.5s animation finishes
+    setTimeout(() => {
+        if (el && el.parentNode) el.parentNode.removeChild(el);
+    }, 1500);
+}
+
         function openQuiz() {
             closeModals();
             lockScroll();
@@ -4284,7 +4355,7 @@ let isQuizAnswered = true;    // Tracks if a question is active or pending
     
     const streakDisplay = document.getElementById('quiz-round-display');
 
-    if (isCorrect) {
+if (isCorrect) {
         quizStreak++;
         let isMilestone = (quizStreak > 0 && quizStreak % 5 === 0);
         
@@ -4295,6 +4366,7 @@ let isQuizAnswered = true;    // Tracks if a question is active or pending
         streakDisplay.innerText = `Streak 🔥 ${quizStreak}`;
         if (isMilestone) {
             streakDisplay.classList.add('streak-celebrate');
+            triggerEncouragement(quizStreak); // <--- ADDED HERE
             setTimeout(() => streakDisplay.classList.remove('streak-celebrate'), 600);
         }
     } else {
