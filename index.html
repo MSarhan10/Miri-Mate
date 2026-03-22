@@ -3899,7 +3899,7 @@ ANTI-GIVEAWAY RULE:
   - The hint should narrow the differential to 2–3 conditions, not to 1.
 
 ### EXPLANATION STRUCTURE (strictly follow this format):
-  PATHOPHYSIOLOGY (1 sentence): Briefly explain the underlying mechanism that causes the key findings in this disease, WHY THIS FITS (1 sentence): State which 2–3 specific vignette findings confirm the diagnosis and why they fit together.\n\n
+  PATHOPHYSIOLOGY (1 sentence): Briefly explain the underlying mechanism that causes the key findings in this disease, WHY THIS FITS (1 sentence): State which 2–3 specific vignette findings confirm the diagnosis and why they fit together.<br><br>
   WHY NOT THE OTHERS (1 sentence per distractor):
     For each wrong option, give ONE mechanistic reason it doesn't fit — not just "less classic."
     Format: "Exclude [Distractor] because [specific finding] points away due to [brief reason]."
@@ -3911,7 +3911,7 @@ ANTI-GIVEAWAY RULE:
 - "correct_index" must accurately point to "${targetDisease}" in the shuffled array (0–3).
 - "explanation" must follow the structure above.
 - "hint" must NOT contain the disease name or any synonym for it.
-
+-"disease names" in bold
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ## OUTPUT FORMAT — return ONLY this JSON:
 
@@ -3921,9 +3921,10 @@ ANTI-GIVEAWAY RULE:
   "options": ["Option A", "Option B", "Option C", "Option D"],
   "correct_index": 0,
   "hint": "Reasoning-direction hint only — no diagnosis name, no pathognomonic giveaway.",
-  "explanation": "[Pathophysiology sentence], [Why this fits sentence] \n\n
-
-Exclude [Distractor 1] because [mechanistic exclusion reason]. Exclude [Distractor 2] because [mechanistic exclusion reason]. Exclude [Distractor 3] because [mechanistic exclusion reason]."
+  "explanation": "<b>[Pathophysiology sentence],<\b> [Why this fits sentence]
+<br>
+<br>
+<b>Exclude [Distractor 1]<\b> because [mechanistic exclusion reason]. <b>Exclude [Distractor 2]<\b> because [mechanistic exclusion reason]. <b>Exclude [Distractor 3] <\b>because [mechanistic exclusion reason]."
 }
 `;
 
