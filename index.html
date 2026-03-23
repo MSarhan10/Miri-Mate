@@ -3485,136 +3485,44 @@ async function generateAIDDx() {
     container.innerHTML = `<div style="text-align:center; padding: 40px; color: var(--primary); font-weight: bold; font-size: 1.2rem; animation: pulse 1.5s infinite;">🧠 Analyzing case...</div>`;
 
 const prompt = `
-You are a Master Diagnostician and Senior Attending Physician with 30 years of experience. You reason like a clinician: systematically, precisely, and never miss a life-threatening diagnosis.
+You are a Master Diagnostician and Senior Attending Physician. You reason systematically, precisely, and prioritize life-threatening diagnoses.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 CLINICAL PRESENTATION:
 "${input}"
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-## STEP 1 — SILENT INTERNAL REASONING (do NOT output this)
+### DIAGNOSTIC REASONING RULES:
+1. UNIFIED CAUSE ANALYSIS: Seek ONE diagnosis that explains ALL symptoms. A diagnosis that unifies multiple symptom clusters ranks higher than one explaining only part of the picture.
+2. CAUSE VS. CONSEQUENCE: Combine root causes and their consequences into a single unified entry. (e.g., Use "Sexual abuse with consequent pregnancy", not two separate diagnoses. Use "Septic shock", and list hypotension as a feature, not a separate diagnosis). Maximum one entry per root etiology.
+3. CONTEXT & VULNERABILITY: Heavily weigh demographics. Actively consider abuse/neglect in pediatrics/elderly, pregnancy/ectopic in reproductive-age females, and opportunistic infections in the immunocompromised.
+4. LETHALITY SCAN: You must identify and include at least one diagnosis that will kill or permanently harm the patient if missed (the "can't-miss" diagnosis).
+5. RANKING: Rank diagnoses by Prior Probability × Symptom Unification. Index 1 = most probable.
 
-### 1-A: EXTRACT & CLUSTER
-- Identify: age, sex, vitals, onset, duration, character, modifiers, associated symptoms.
-- Group findings into symptom clusters. Do NOT treat symptoms as isolated — look for links between them.
-
-### 1-B: UNIFIED CAUSE ANALYSIS (most critical step)
-Before ranking, ask:
-  "Can ONE diagnosis explain ALL symptoms simultaneously?"
-  A diagnosis that unifies MORE findings outranks one that explains only part of the picture.
-
-Apply these universal reasoning rules:
-
-DEMOGRAPHICS OVERRIDE RULE:
-  - Patient age, sex, and context dramatically shift prior probability.
-  - Always ask: "Given THIS patient's demographics, what is statistically most likely?"
-  - Never let diagnostic comfort bias you toward safer-sounding diagnoses.
-  - The most uncomfortable diagnosis is often the most important one.
-
-SYMPTOM COMBINATION RULE:
-  - When two or more symptoms seem unrelated, ask: "What single condition causes BOTH?"
-  - A diagnosis that bridges multiple symptom clusters ranks HIGHER than one that explains only one.
-
-CAUSE vs. CONSEQUENCE RULE — CRITICAL:
-  - Never list a diagnosis AND its direct consequence as two separate entries.
-  - If Diagnosis A causes Symptom X, and you already listed Diagnosis A, do NOT list
-    "Symptom X" or "Condition caused by A" as a separate diagnosis.
-  - Merge them: the PRIMARY cause is the diagnosis; its consequences are listed
-    inside that entry's distinctive_features or clinical_reasoning.
-  - Examples of WRONG splitting:
-      ✗ "Sepsis" + "Hypotension" as two separate diagnoses
-      ✗ "Sexual abuse" + "Pregnancy" as two separate diagnoses
-      ✗ "Liver failure" + "Coagulopathy" as two separate diagnoses
-  - Correct approach:
-      ✓ "Sexual abuse with consequent pregnancy" → pregnancy listed as a feature/consequence WITHIN that entry
-      ✓ "Septic shock" → hypotension listed as a red flag WITHIN that entry
-
-CONTEXT & VULNERABILITY RULE:
-  - In pediatric patients: always consider abuse (physical, sexual, neglect) when injuries are unexplained or atypical.
-  - In elderly patients: always consider falls, polypharmacy, elder abuse, and occult malignancy.
-  - In reproductive-age females: always consider pregnancy (including ectopic) whenever relevant — never rank it "Low" by default.
-  - In immunocompromised patients: consider opportunistic and atypical pathogens first.
-
-MEDICO-LEGAL AWARENESS RULE:
-  - When the presentation could involve abuse, assault, or neglect (any age), at least one diagnosis must explicitly name it and treat it as a medico-legal priority, not merely a medical one.
-
-ANTI-BIAS CHECKLIST (run before finalizing rankings):
-  ✗ Am I avoiding an uncomfortable diagnosis because it feels unlikely socially?
-  ✗ Am I splitting one unified diagnosis into two lower-ranked entries?
-  ✗ Am I listing a cause AND its consequence as two separate diagnoses?
-  ✗ Am I anchoring on the most "obvious" finding and ignoring others?
-  ✗ Am I ranking a critical can't-miss too low because it feels rare?
-  If YES to any → revise before outputting.
-
-### 1-C: APPLY THE SURGICAL SIEVE
-VINDICATE framework — systematically rule IN or OUT each category:
-  V — Vascular
-  I — Infective
-  N — Neoplastic
-  D — Degenerative
-  I — Inflammatory / Immune
-  C — Congenital
-  A — Autoimmune / Allergic
-  T — Trauma / Toxic
-  E — Endocrine / Metabolic
-
-### 1-D: LETHALITY SCAN
-Ask: "What will KILL or PERMANENTLY HARM this patient if I miss it?"
-That diagnosis MUST appear in the output, ranked appropriately — never buried at the bottom.
-
-### 1-E: FINAL RANKING
-Rank by: PRIOR PROBABILITY × Likelihood Ratio of presented findings × Symptom Unification Score.
-Most unifying + most probable = rank 1.
-
----
-
-## STEP 2 — OUTPUT RULES (STRICTLY ENFORCED)
-- Output ONLY valid JSON. No prose, no markdown fences, no extra keys.
-- "diagnoses" array MUST be sorted: index [0] = most probable → last index = least probable.
-- Include 5–6 diagnoses PLUS at minimum 1 life-threatening "can't-miss" (is_life_threatening: true).
-- If the can't-miss is already in the top 5–6, do NOT duplicate — just flag it in "can_not_miss_flag".
-- confidence: ONLY "High" | "Medium" | "Low" — nothing else.
-- red_flags: populate ONLY when is_life_threatening is true, else must be [].
-- clinical_reasoning MUST reference specific findings from THIS patient — no generic statements.
-- DEDUPLICATION RULE: Before finalizing, scan all diagnoses. If any two entries share a
-  cause-consequence relationship, MERGE them into the primary cause entry. Maximum one
-  entry per root etiology.
-
----
-
-## STEP 3 — FIELD INSTRUCTIONS
-| Field                        | Instruction |
-|------------------------------|-------------|
-| disease_name                 | Precise medical name. If a condition has a direct consequence, name both inline: e.g., "Child Sexual Abuse with Consequent Pregnancy" |
-| confidence                   | Calibrated to actual symptom fit. High = strong multi-symptom match. |
-| is_life_threatening          | true if untreated → death or permanent severe harm within hours–days |
-| clinical_reasoning           | 1–2 sentences: WHY this fits THIS patient. Reference specific signs/symptoms/demographics. |
-| distinctive_features         | 2–4 bullets: Classic hallmarks pointing TO this diagnosis. Include consequences here, not as separate diagnoses. |
-| next_steps_to_differentiate  | 2–3 bullets: Specific tests to CONFIRM or RULE OUT. Be precise (e.g., "serum β-hCG", "CT-PA with contrast") |
-| red_flags                    | 2–4 bullets: Signs demanding IMMEDIATE escalation. Only for life-threatening dx. |
-
----
-
-## OUTPUT FORMAT — return ONLY this JSON:
+### OUTPUT INSTRUCTIONS:
+- Output ONLY raw, valid JSON. Do not use markdown code fences (no \`\`\`json).
+- Follow the exact JSON schema provided below.
+- "confidence" must be exactly "High", "Medium", or "Low".
+- "red_flags" must contain items ONLY if "is_life_threatening" is true. Otherwise, leave it as an empty array [].
 
 {
-  "clinical_summary": "One sentence: chief complaint + 3 most salient findings",
-  "unified_hypothesis": "One sentence: the single diagnosis that best explains the most findings together",
-  "can_not_miss_flag": "Name of the life-threatening diagnosis that must be ruled out first",
+  "clinical_thought_process": "Briefly think through the VINDICATE framework, demographic risks, and unified cause vs consequence rules for this specific patient before listing diagnoses.",
+  "clinical_summary": "One sentence: chief complaint + 3 most salient findings.",
+  "unified_hypothesis": "One sentence: the single diagnosis that best explains the most findings together.",
+  "can_not_miss_flag": "Name of the life-threatening diagnosis that must be ruled out first.",
   "diagnoses": [
     {
       "rank": 1,
-      "disease_name": "",
-      "confidence": "",
+      "disease_name": "Precise medical name (include consequence inline if applicable)",
+      "confidence": "High",
       "is_life_threatening": false,
-      "clinical_reasoning": "",
-      "distinctive_features": [],
-      "next_steps_to_differentiate": [],
+      "clinical_reasoning": "1-2 sentences explaining WHY this fits THIS patient using specific findings.",
+      "distinctive_features": ["Classic hallmark 1 pointing to this dx", "Classic hallmark 2"],
+      "next_steps_to_differentiate": ["Specific test to confirm or rule out 1", "Specific test 2"],
       "red_flags": []
     }
   ]
 }
 `;
+
     const result = await fetchGroqAI(prompt);
     
     if (!result || !result.diagnoses) {
@@ -3857,76 +3765,54 @@ async function generateQuizQuestion() {
         diffInstructions = "Make it very difficult (Board-exam level). Exclude obvious buzzwords. The presentation should rely on subtle lab values, nuanced physical exam findings, or tricky risk factors. Distractors must be highly plausible alternative diagnoses that require careful differentiation.";
     }
 
-    const prompt = `
-You are a Senior Medical Educator writing high-yield USMLE-style clinical vignettes.
-Your goal: test CLINICAL REASONING, not pattern recognition or trivia.
+const prompt = `
+You are a Senior Medical Educator writing a high-yield USMLE-style clinical vignette.
+Your goal is to test CLINICAL REASONING, not pattern recognition.
 
-The CORRECT diagnosis is: "${targetDisease}"
+Target Diagnosis: "${targetDisease}"
 Difficulty: ${actualDiff.toUpperCase()}
 ${diffInstructions}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-## STEP 1 — SILENT VIGNETTE CONSTRUCTION (do NOT output this)
+### GENERATION RULES:
 
-### VIGNETTE RULES:
-TRIMMING RULE:
-  - Include ONLY findings that are diagnostically relevant or deliberately misleading.
-  - Strip all filler: no unnecessary social history, no redundant vitals, no "otherwise healthy" padding.
-  - Every sentence must either point toward or deliberately away from the answer.
+1. VIGNETTE:
+- Write a highly concise clinical presentation. 
+- Include ONLY diagnostically relevant or deliberately misleading findings. Strip all filler (no redundant vitals, no "otherwise healthy").
+- Calibrate to the requested difficulty:
+  - EASY: 2-3 classic, textbook features. No red herrings.
+  - MEDIUM: 1 atypical or missing feature. 1 plausible red herring.
+  - HARD: Atypical variant, early/late stage, or complication. Omit the most obvious classic feature. Add 1-2 deliberate red herrings.
+- Anti-Giveaway: Never use 100% pathognomonic buzzwords (e.g., "strawberry tongue") unless operating on HARD mode as a deliberate misdirect.
 
-DIFFICULTY CALIBRATION:
-  - EASY: Include 2–3 classic, textbook features. No red herrings.
-  - MEDIUM: Include 1 atypical or missing feature. Add 1 plausible red herring.
-  - HARD: Present an atypical variant, early/late stage, or complication.
-    Omit the most "obvious" classic feature. Add 1–2 deliberate misleading findings.
+2. OPTIONS & DISTRACTORS:
+- Provide 4 total options (1 correct, 3 distractors).
+- Distractors must be CONDITIONS in the same clinical category. 
+- Each distractor must share at least 2 features with the vignette to create common exam traps.
 
-DISTRACTOR SELECTION RULE:
-  - Distractors must be CONDITIONS, not symptoms or findings.
-  - All 4 options must be in the same clinical category (e.g., all causes of chest pain, all pediatric rashes).
-  - Each distractor must share at least 2 features with the vignette — no obviously wrong answers.
-  - Distractors should represent common exam traps for this specific disease.
+3. HINT:
+- Frame as a clinical question: "What condition affects X population and causes both Y and Z?"
+- Guide the reasoning direction to narrow the differential to 2 conditions.
+- Never name the disease or use pathognomonic giveaways.
 
-ANTI-GIVEAWAY RULE:
-  - Do NOT include any finding that is 100% pathognomonic and only found in "${targetDisease}".
-    If you must include it, pair it with a red herring that briefly misleads.
-  - Do NOT use phrasing that telegraphs the diagnosis (e.g., avoid "strawberry tongue" 
-    if only one condition has it. Unless  in "HARD" difficulty as deliberate misdirect
+4. EXPLANATION:
+- First sentence: Explain the underlying pathophysiological mechanism of ${targetDisease} and why the specific vignette findings confirm it.
+- Subsequent sentences: Mechanistically exclude each wrong option (e.g., "Exclude [Condition] because...").
 
-### HINT RULES:
-  - The hint must guide REASONING DIRECTION, never name or strongly imply the disease.
-  - Frame it as a clinical question: "What condition affects X population and causes both Y and Z?"
-  - NEVER say "classic triad of..." or "pathognomonic for..." — these effectively reveal the answer.
-  - The hint should narrow the differential to 2–3 conditions, not to 1.
-
-### EXPLANATION STRUCTURE (strictly follow this format):
-  PATHOPHYSIOLOGY (1 sentence): Briefly explain the underlying mechanism that causes the key findings in this disease, WHY THIS FITS (1 sentence): State which 2–3 specific vignette findings confirm the diagnosis and why they fit together.<br><br>
-  WHY NOT THE OTHERS (1 sentence per distractor):
-    For each wrong option, give ONE mechanistic reason it doesn't fit — not just "less classic."
-    Format: "Exclude [Distractor] because [specific finding] points away due to [brief reason]."
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-## STEP 2 — OUTPUT RULES
-- Output ONLY valid JSON. No markdown fences, no prose outside JSON.
-- "options" must have exactly 4 items, shuffled randomly.
-- "correct_index" must accurately point to "${targetDisease}" in the shuffled array (0–3).
-- "explanation" must follow the structure above.
-- "hint" must NOT contain the disease name or any synonym for it.
--"disease names" in bold
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-## OUTPUT FORMAT — return ONLY this JSON:
+### OUTPUT INSTRUCTIONS:
+- Output ONLY raw, valid JSON. Do not use markdown code fences (no \`\`\`json).
+- Ensure the "options" array is randomized.
+- Ensure "correct_index" exactly matches the position (0-3) of "${targetDisease}".
 
 {
   "correct_disease_name": "${targetDisease}",
-  "vignette": "A [age]-year-old [sex] with [relevant background] presents with [trimmed, discriminating findings only].",
+  "vignette": "A [age]-year-old [sex] presents with [trimmed findings].",
   "options": ["Option A", "Option B", "Option C", "Option D"],
   "correct_index": 0,
-  "hint": "Reasoning-direction hint only — no diagnosis name, no pathognomonic giveaway.",
-  "explanation": "<b>[Pathophysiology sentence],<\b> [Why this fits sentence]
-<br>
-<br>
-<b>Exclude [Distractor 1]<\b> because [mechanistic exclusion reason]. <b>Exclude [Distractor 2]<\b> because [mechanistic exclusion reason]. <b>Exclude [Distractor 3] <\b>because [mechanistic exclusion reason]."
+  "hint": "[Guiding clinical question hint]",
+  "explanation": "<b>[correct answer]<\b>[Pathophysiology and confirmation of correct diagnosis].<br><br><b>[Distractor 1]<\b>: [Mechanistic reason it is excluded].<br><b>[Distractor 2]<\b>: [Mechanistic reason it is excluded].<br><b>[Distractor 3]<\b>: [Mechanistic reason it is excluded]."
 }
 `;
+
 
     const result = await fetchGroqAI(prompt, "You are an expert medical educator creating board-style questions.");
 
@@ -4047,7 +3933,7 @@ function showQuizFloatingModal(title, text, type) {
     overlay.style.height = '100%';
     overlay.style.background = 'rgba(0,0,0,0.5)';
     overlay.style.backdropFilter = 'blur(2px)';
-    overlay.style.zIndex = '3000'; // Make sure it's above everything
+    overlay.style.zIndex = '3000'; 
     overlay.style.display = 'flex';
     overlay.style.alignItems = 'center';
     overlay.style.justifyContent = 'center';
@@ -4061,14 +3947,38 @@ function showQuizFloatingModal(title, text, type) {
     const icon = type === 'hint' ? '💡' : '📖';
     
     overlay.innerHTML = `
-        <div style="background: ${boxColor}; width: 85%; max-width: 380px; padding: 24px; border-radius: 20px; border: 2px solid ${borderColor}; box-shadow: 0 10px 30px rgba(0,0,0,0.3); transform: translateY(20px) scale(0.95); transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
-            <h3 style="margin-top: 0; color: ${titleColor}; font-size: 1.25rem; display: flex; align-items: center; gap: 8px; margin-bottom: 15px;">
+        <div style="
+            background: ${boxColor}; 
+            width: 85%; 
+            max-width: 380px; 
+            max-height: 85vh; /* Prevents modal from being taller than the screen */
+            display: flex; /* Flexbox layout */
+            flex-direction: column; /* Stack children vertically */
+            box-sizing: border-box; /* Includes padding in height calculations */
+            padding: 24px; 
+            border-radius: 20px; 
+            border: 2px solid ${borderColor}; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
+            transform: translateY(20px) scale(0.95); 
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        ">
+            <h3 style="margin-top: 0; color: ${titleColor}; font-size: 1.25rem; display: flex; align-items: center; gap: 8px; margin-bottom: 15px; flex-shrink: 0; /* Prevents title from shrinking */">
                 ${icon} ${title}
             </h3>
-            <div style="font-size: 0.95rem; line-height: 1.5; color: var(--text-main); margin-bottom: 24px;">
+            
+            <div style="
+                font-size: 0.95rem; 
+                line-height: 1.5; 
+                color: var(--text-main); 
+                margin-bottom: 20px; 
+                overflow-y: auto; /* Enables scrolling for long text */
+                overscroll-behavior: contain; /* Prevents background page from scrolling */
+                padding-right: 5px; /* Slight padding for the scrollbar */
+            ">
                 ${text}
             </div>
-            <button class="btn-main" style="width: 100%; margin: 0; font-size: 1.05rem;" onclick="this.closest('div[style*=\\'position: fixed\\']').style.opacity = '0'; setTimeout(() => this.closest('div[style*=\\'position: fixed\\']').remove(), 200);">Got it</button>
+            
+            <button class="btn-main" style="width: 100%; margin: 0; font-size: 1.05rem; flex-shrink: 0; /* Prevents button from shrinking */" onclick="this.closest('div[style*=\\'position: fixed\\']').style.opacity = '0'; setTimeout(() => this.closest('div[style*=\\'position: fixed\\']').remove(), 200);">Got it</button>
         </div>
     `;
     
@@ -4080,7 +3990,6 @@ function showQuizFloatingModal(title, text, type) {
         overlay.children[0].style.transform = 'translateY(0) scale(1)';
     }, 10);
 }
-
 
 
 function playQuizAudio(isCorrect, isMilestone = false) {
