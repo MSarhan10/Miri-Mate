@@ -3,7 +3,7 @@
 //  • APP_CACHE    → bump on every release (JS, HTML, manifest)
 //  • STATIC_CACHE → only bump when images actually change
 // ============================================================
-const APP_CACHE    = 'mirimate-v65';       // ← bump every release
+const APP_CACHE    = 'mirimate-v66';       // ← bump every release
 const STATIC_CACHE = 'mirimate-static-v1'; // ← only bump when icons/images change
 
 // How long to wait for the network before falling back to cache
