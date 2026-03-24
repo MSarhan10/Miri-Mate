@@ -803,6 +803,19 @@ html.modal-open, body.modal-open {
 .ddx-medscape-link:active { background: #bae6fd; }
 :root[data-theme="dark"] .ddx-medscape-link { background: #082f49; border-color: #0369a1; color: #bae6fd; }
 
+/* Saved DDx Analysis Cards */
+.ddx-saved-card {
+    background: var(--surface); border: 1px solid var(--divider); border-radius: 16px;
+    padding: 16px; margin-bottom: 12px; cursor: pointer; transition: 0.15s;
+}
+.ddx-saved-card:active { opacity: 0.7; }
+.ddx-saved-card-title { font-size: 1.15rem; font-weight: 800; color: var(--text-main); margin-bottom: 10px; }
+.ddx-saved-card-clues { display: flex; flex-wrap: wrap; gap: 6px; }
+.ddx-saved-clue-chip {
+    background: var(--bg); border: 1px solid var(--divider); border-radius: 12px;
+    padding: 4px 10px; font-size: 0.78rem; font-weight: 600; color: var(--text-muted);
+}
+
         #toast {
     visibility: hidden;
     min-width: 250px;
@@ -1254,9 +1267,12 @@ html.modal-open, body.modal-open {
 <!-- AI DDx Full-Screen Modal -->
 <div id="ddx-modal">
     <div class="lab-header">
-        <button class="lab-header-close" onclick="closeDDx()">✕</button>
+        <button class="lab-header-close" id="ddx-header-left-btn" onclick="closeDDx()">✕</button>
         <span style="font-weight:700; font-size:1.1rem;">🧠 DDx Search</span>
-        <button class="lab-header-close" onclick="promptResetApiKey()" title="Reset API Key" style="font-size: 1.1rem;">↺</button>
+        <div style="display:flex; gap:8px; align-items:center;">
+            <button class="lab-header-close" id="ddx-header-right-btn-a" onclick="ddxHeaderRightA()" title="Saved Analyses" style="font-size: 1.1rem;">🗃️</button>
+            <button class="lab-header-close" id="ddx-header-right-btn-b" onclick="ddxHeaderRightB()" title="Reset API Key" style="font-size: 1.1rem;">🔑</button>
+        </div>
     </div>
     
 <!-- STATE 1: API Key Required -->
@@ -1282,7 +1298,7 @@ html.modal-open, body.modal-open {
         
         <!-- Input Block (Auto-collapses) -->
         <div id="ddx-input-container" style="padding: 16px; background: var(--surface); border-bottom: 1px solid var(--divider); flex-shrink: 0; transition: all 0.3s;">
-            <textarea id="ddx-input" placeholder="Enter clinical presentation (e.g., 45yo M with acute RLQ pain, fever, nausea...)" style="width: 100%; height: 110px; padding: 12px; border-radius: 12px; border: 2px solid var(--divider); background: var(--bg); color: var(--text-main); font-size: 1rem; resize: none; margin-bottom: 10px; outline: none;"></textarea>
+            <textarea id="ddx-input" placeholder="Enter clinical presentation (e.g., 45yo male with acute abdominal pain, fever, nausea...)" style="width: 100%; height: 110px; padding: 12px; border-radius: 12px; border: 2px solid var(--divider); background: var(--bg); color: var(--text-main); font-size: 1rem; resize: none; margin-bottom: 10px; outline: none;"></textarea>
             <button class="btn-main" onclick="generateAIDDx()" style="width: 100%; padding: 14px; font-size: 1.1rem; display: flex; justify-content: center; align-items: center; gap: 8px;">✨ Generate DDx</button>
         </div>
 
@@ -1300,6 +1316,19 @@ html.modal-open, body.modal-open {
         
         <!-- Floating Quiz Button inside DDx -->
         <button onclick="openQuiz()" style="position: absolute; bottom: 10px; right: 10px; background: var(--primary); color: white; border: none; padding: 14px 24px; border-radius: 30px; font-weight: 800; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.25); cursor: pointer; z-index: 10; display: flex; align-items: center; gap: 8px;">💡 Quiz Me</button>
+    </div>
+
+    <!-- Saved Analyses Panel -->
+    <div id="ddx-saved-panel" style="display:none; flex-direction:column; flex-grow:1; overflow-y:auto; background:var(--bg);">
+        <div style="padding:16px; color:var(--text-muted); font-size:0.9rem; font-weight:600; text-align:center; border-bottom:1px solid var(--divider);">
+            Tap an analysis to view it
+        </div>
+        <div id="ddx-saved-list" style="padding:12px;"></div>
+    </div>
+
+    <!-- Single Analysis View Panel -->
+    <div id="ddx-analysis-view" style="display:none; flex-direction:column; flex-grow:1; overflow-y:auto; background:var(--bg);">
+        <div id="ddx-analysis-view-content" style="padding:16px; padding-bottom:80px;"></div>
     </div>
 </div>
 
@@ -3309,15 +3338,18 @@ function openDDx() {
     
     const ddxModal = document.getElementById('ddx-modal');
     ddxModal.style.display = 'flex';
-    
-    // <-- CHANGE groqKey to geminiKey HERE
-    if (!appData.settings.geminiKey) { 
-        document.getElementById('ddx-main-interface').style.display = 'none';
+
+    // Always reset panels to prevent merge on reopen
+    document.getElementById('ddx-saved-panel').style.display = 'none';
+    document.getElementById('ddx-analysis-view').style.display = 'none';
+    document.getElementById('ddx-api-setup').style.display = 'none';
+    document.getElementById('ddx-main-interface').style.display = 'none';
+
+    if (!appData.settings.geminiKey) {
         document.getElementById('ddx-api-setup').style.display = 'block';
         document.getElementById('ddx-api-input-area').style.display = 'none';
     } else {
-        document.getElementById('ddx-api-setup').style.display = 'none';
-        document.getElementById('ddx-main-interface').style.display = 'flex';
+        setTimeout(() => ddxSyncHeader(), 30);
     }
 }
 
@@ -3421,7 +3453,24 @@ function clearDDx() {
 // =============================================
 // AI API CONFIGURATION & ERROR HANDLING
 // =============================================
-async function fetchGeminiAI(prompt, systemInstruction = "You are an expert medical AI.", model = "gemini-2.5-flash", silent = false, jsonMode = true) {
+
+const accuracyModels = [    
+    "gemini-3.1-flash-lite-preview", 
+    "gemini-2.5-flash-lite", 
+    "gemini-2.5-flash",
+    "gemini-3-flash-preview",
+    "gemma-3-27b-it"
+];
+const formattingModels = [
+    "gemini-2.5-flash-lite",
+    "gemini-2.5-flash",
+    "gemini-3-flash-preview", 
+    "gemma-3-27b-it",
+    "gemini-3.1-flash-lite-preview" 
+];
+
+
+async function fetchGeminiAI(prompt, systemInstruction = "You are an expert medical AI.", model = "gemini-3.1-flash-lite-preview", silent = false, jsonMode = true) {
     if (!navigator.onLine) { 
         if (!silent) showToast("📴 Offline. This feature needs internet."); 
         return null; 
@@ -3429,22 +3478,23 @@ async function fetchGeminiAI(prompt, systemInstruction = "You are an expert medi
     
     const apiKey = appData.settings.geminiKey;
     if (!apiKey) {
-        if (!silent) showToast("🔑 No API key saved. Please enter your Google AI Studio key.");
+        if (!silent) showToast("🔑 No API key saved.");
         return null;
     }
 
-    // Google's Official OpenAI Compatibility Endpoint
-    const body = {
-        model: model,
-        messages:[
+    const isGemma = model.toLowerCase().includes("gemma");
+    let messages = [];
+
+    if (isGemma) {
+        let enhancedPrompt = `System Instructions: ${systemInstruction}\n\nUser Request: ${prompt}`;
+        if (jsonMode) enhancedPrompt += "\n\nIMPORTANT: Respond ONLY with a valid JSON object.";
+        messages = [{ role: "user", content: enhancedPrompt }];
+    } else {
+        messages = [
             { role: "system", content: systemInstruction },
             { role: "user", content: prompt }
-        ],
-        temperature: 0.35
-    };
-    
-    // Enforce JSON output if requested
-    if (jsonMode) body.response_format = { type: "json_object" };
+        ];
+    }
 
     try {
         const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
@@ -3453,46 +3503,81 @@ async function fetchGeminiAI(prompt, systemInstruction = "You are an expert medi
                 "Authorization": `Bearer ${apiKey}`, 
                 "Content-Type": "application/json" 
             },
-            body: JSON.stringify(body)
+            body: JSON.stringify({
+                model: model,
+                messages: messages,
+                temperature: 0.5,
+                ...(jsonMode && !isGemma && { response_format: { type: "json_object" } })
+            })
         });
         
-        if (!response.ok) {
-            if (response.status === 401) {
-                if (!silent) showToast("❌ Invalid API Key.");
-                appData.settings.geminiKey = "";
-                saveData();
-            } else if (!silent) {
-                if (response.status === 404) console.error("Model not found:", model);
-                else if (response.status === 429) showToast("⏳ Rate limit reached. Wait a moment.");
-                else showToast(`❌ API Error: ${response.status}`);
-            }
-            throw new Error("API Error: " + response.status);
-        }
+       /* if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            showToast(`❌ ${model} HTTP ${response.status}: ${err.error?.message || 'Unknown'}`);
+            return null;
+        }*/
         
         const data = await response.json();
-        let content = data.choices[0].message.content;
-        
+
+       /* // --- DEBUG TOASTS FOR 3.1 LITE ---
+        if (model.includes("3.1-flash-lite")) {
+            const choice = data.choices?.[0];
+            const reason = choice?.finish_reason;
+            const text = choice?.message?.content;
+
+            if (!choice) {
+                showToast("⚠️ 3.1 Lite: No choices in response!");
+            } else if (reason === "safety") {
+                showToast("🛡️ 3.1 Lite: Blocked by Safety Filter (Medical?)");
+            } else if (!text) {
+                showToast(`⚠️ 3.1 Lite: Finish Reason: ${reason}`);
+            } else {
+                showToast(`📡 3.1 Lite: Received ${text.length} chars.`);
+            }
+        }
+        // ---------------------------------*/
+
+        let content = data.choices?.[0]?.message?.content;
+        if (!content) return null;
+
         if (!jsonMode) return content.trim();
         
-        // Clean markdown backticks if the AI accidentally includes them
         content = content.replace(/```json/gi, '').replace(/```/g, '').trim();
         return JSON.parse(content);
+
     } catch (error) { 
-        console.error(`[Gemini:${model}] Fetch Error:`, error); 
+        showToast(`💥 ${model} Runtime Error: ${error.message.substring(0, 30)}`);
         return null; 
     }
 }
 
+
+
 async function fetchGeminiWithFallback(prompt, systemInstruction, models, jsonMode = true) {
-    if (!appData.settings.geminiKey) return null; // key check already toasted in fetchGeminiAI
+    if (!appData.settings.geminiKey) {
+        showToast("🔑 No API key saved. Please enter your Google AI Studio key.");
+        return null; 
+    }
+    
     for (let i = 0; i < models.length; i++) {
         const isLast = i === models.length - 1;
-        const result = await fetchGeminiAI(prompt, systemInstruction, models[i], true, jsonMode);
-        if (result) return result;
-        if (isLast) showToast("⏳ All models busy or failed. Please try again in a moment.");
+        const currentModel = models[i];
+        
+        const result = await fetchGeminiAI(prompt, systemInstruction, currentModel, true, jsonMode);
+        
+        if (result) {
+            // Trigger toast specifically displaying the successful model
+            //showToast(`✅ Model used: ${currentModel}`);
+            return result;
+        }
+        
+        if (isLast) {
+            showToast("⏳ All models busy or failed. Please try again in a moment.");
+        }
     }
     return null;
 }
+
 // =============================================
 // AI DDx GENERATOR — TWO-STEP PIPELINE v4
 // Fixes:
@@ -3538,12 +3623,7 @@ var step1Prompt =
 + '   EXCLUDED: [List of rejected diagnoses with a 1-sentence reason why they were clinically ruled out]\n\n'
 + 'Use only provided data. No hallucinated findings.';
 
-var step1Result = await fetchGeminiWithFallback(step1Prompt, step1System, [
-"gemini-3.1-flash-lite-preview", // Insanely fast, but strict 5 RPM limit
-    "gemini-2.5-flash-lite", // Extremely fast, gives you 15 RPM on the Free Tier
-    "gemini-2.5-flash"     // Great medical reasoning, gives you 10 RPM
-    
-], false);
+var step1Result = await fetchGeminiWithFallback(step1Prompt, step1System, accuracyModels, false);
 
     if (!step1Result ) {
         container.innerHTML = '<div style="text-align:center;padding:40px;color:#ef4444;font-weight:800;font-size:1rem;">'
@@ -3602,12 +3682,7 @@ var step2Prompt =
 + '}';
 
 var enriched = await fetchGeminiWithFallback(step2Prompt,
-    "You are a clinical formatting AI. Output only valid JSON.",
-    [
-"gemini-2.5-flash-lite", // Extremely fast, gives you 15 RPM on the Free Tier
-    "gemini-2.5-flash",      // Great medical reasoning, gives you 10 RPM
-    "gemini-3.1-flash-lite-preview" // Insanely fast, but strict 5 RPM limit
-]);
+    "You are a clinical formatting AI. Output only valid JSON.", formattingModels);
 
     var finalData = (enriched && enriched.diagnoses && Array.isArray(enriched.diagnoses)) ? enriched : step1Result;
 
@@ -3630,6 +3705,7 @@ var enriched = await fetchGeminiWithFallback(step2Prompt,
             + JSON.stringify(finalData, null, 2)
             + '</pre></div>';
     }
+    if (typeof setDdxHeaderState === 'function') setDdxHeaderState('result');
 }
 
 function renderAIDDxAnalysis(data, isDark) {
@@ -3763,22 +3839,20 @@ function renderAIDDxAnalysis(data, isDark) {
                        + ai + '</div>';
         }
 
-        // ── red flags collapsible ────────────────────────
+        // ── red flags collapsible — vertical-line bullets (like workup) ──
         var redFlagsBlock = '';
         if (hasRedFlags) {
-            var rfTags = '';
+            var rfItems = '';
             d.red_flags.forEach(function(flag) {
-                rfTags += '<div style="font-size:0.80rem;font-weight:700;color:' + rfTxt + ';'
-                        + 'line-height:1.45;margin-bottom:5px;padding:4px 10px;'
-                        + 'background:' + rfTagBg + ';border:1px solid ' + rfTagBdr + ';'
-                        + 'border-radius:7px;display:inline-block;margin-right:5px;">'
-                        + '🚩 ' + flag + '</div>';
+                rfItems += '<div style="font-size:0.80rem;font-weight:600;color:var(--text-main);'
+                         + 'line-height:1.45;margin-bottom:5px;padding-left:12px;'
+                         + 'border-left:2px solid ' + rfTxt + ';">' + flag + '</div>';
             });
-            redFlagsBlock = '<details style="margin-bottom:8px;" data-rf>'
-                          + makeSummary(rfBg, rfBdr, rfTxt, '🚨 Red Flags — Must Not Miss')
+            redFlagsBlock = '<details style="margin-bottom:4px;" data-rf>'
+                          + makeSummary(rfBg, rfBdr, rfTxt, '🚩 Red Flags')
                           + '<div style="background:' + rfBg + ';border:1px solid ' + rfBdr + ';'
                           + 'border-top:none;border-radius:0 0 10px 10px;padding:11px 13px;">'
-                          + '<div style="display:flex;flex-wrap:wrap;gap:4px;">' + rfTags + '</div>'
+                          + rfItems
                           + '</div></details>';
         }
 
@@ -3812,7 +3886,7 @@ function renderAIDDxAnalysis(data, isDark) {
         // ── management ───────────────────────────────────
         var mgtBlock = '';
         if (d.management) {
-            mgtBlock = '<details style="margin-bottom:4px;">'
+            mgtBlock = '<details style="margin-bottom:8px;">'
                      + makeSummary(mgtBg, mgtBdr, mgtTxt, '💊 Mainstay Management')
                      + '<div style="background:' + mgtBg + ';border:1px solid ' + mgtBdr + ';'
                      + 'border-top:none;border-radius:0 0 10px 10px;padding:11px 13px;">'
@@ -3845,7 +3919,8 @@ function renderAIDDxAnalysis(data, isDark) {
                 + '>🚨 Rule Out</span>';
         }
 
-        var openAttr = isTop ? ' open' : '';
+        // ── CHANGE 1: all cards collapsed on render ──────
+        var openAttr = '';
 
         html += '<div style="' + cardStyle + '" data-dx-card>'
               + '<details' + openAttr + ' data-dx-outer>'
@@ -3871,10 +3946,11 @@ function renderAIDDxAnalysis(data, isDark) {
               + '<div style="padding:12px 14px 14px 14px;border-top:1px solid var(--divider);">'
               + forBlock
               + againBlock
-              + redFlagsBlock
               + pathBlock
               + workupBlock
               + mgtBlock
+              // ── CHANGE 2: red flags last, after management ──
+              + redFlagsBlock
               + '</div>'
               + '</details>'
               + '</div>';
@@ -3916,6 +3992,169 @@ function renderAIDDxAnalysis(data, isDark) {
 
     return html;
 }
+
+// =============================================
+// DDx HEADER STATE MACHINE & SAVED ANALYSES
+// =============================================
+let ddxHeaderState = 'search';
+let ddxViewingIndex = null;
+
+function ddxSavedAnalyses() {
+    return JSON.parse(localStorage.getItem('ddx_saved_analyses') || '[]');
+}
+function ddxSaveAnalyses(arr) {
+    localStorage.setItem('ddx_saved_analyses', JSON.stringify(arr));
+}
+
+function ddxSyncHeader() {
+    const hasResult = document.getElementById('ddx-results-content') &&
+        !!document.getElementById('ddx-results-content').querySelector('[data-dx-card]');
+    setDdxHeaderState(hasResult ? 'result' : 'search');
+}
+
+function setDdxHeaderState(state, savedIndex) {
+    ddxHeaderState = state;
+    ddxViewingIndex = (savedIndex !== undefined) ? savedIndex : null;
+
+    const leftBtn    = document.getElementById('ddx-header-left-btn');
+    const rightA     = document.getElementById('ddx-header-right-btn-a');
+    const rightB     = document.getElementById('ddx-header-right-btn-b');
+    const mainUI     = document.getElementById('ddx-main-interface');
+    const savedPanel = document.getElementById('ddx-saved-panel');
+    const viewPanel  = document.getElementById('ddx-analysis-view');
+
+    if (!leftBtn || !rightA || !rightB || !mainUI || !savedPanel || !viewPanel) return;
+
+    mainUI.style.display     = 'none';
+    savedPanel.style.display = 'none';
+    viewPanel.style.display  = 'none';
+
+    if (state === 'search') {
+        mainUI.style.display = 'flex';
+        leftBtn.textContent  = '✕';
+        leftBtn.onclick      = closeDDx;
+        rightA.style.display = 'flex'; rightA.textContent = '🗃️'; rightA.title = 'Saved Analyses';
+        rightB.style.display = 'flex'; rightB.textContent = '🔑'; rightB.title = 'Reset API Key';
+
+    } else if (state === 'result') {
+        mainUI.style.display = 'flex';
+        leftBtn.textContent  = '✕';
+        leftBtn.onclick      = closeDDx;
+        rightA.style.display = 'flex'; rightA.textContent = '💾'; rightA.title = 'Save Analysis';
+        rightB.style.display = 'flex'; rightB.textContent = '🗑️'; rightB.title = 'Discard & Clear';
+
+    } else if (state === 'saved') {
+        savedPanel.style.display = 'flex';
+        leftBtn.textContent      = '✕';
+        leftBtn.onclick          = openDDx;
+        rightA.style.display = 'none';
+        rightB.style.display = 'none';
+        renderDdxSavedList();
+
+    } else if (state === 'viewing') {
+        viewPanel.style.display = 'flex';
+        leftBtn.textContent     = '←';
+        leftBtn.onclick         = () => setDdxHeaderState('saved');
+        rightA.style.display = 'none';
+        rightB.style.display = 'flex'; rightB.textContent = '🗑️'; rightB.title = 'Delete Analysis';
+    }
+}
+
+function ddxHeaderRightA() {
+    if (ddxHeaderState === 'search')       setDdxHeaderState('saved');
+    else if (ddxHeaderState === 'result')  ddxSaveCurrentAnalysis();
+}
+
+function ddxHeaderRightB() {
+    if (ddxHeaderState === 'search') {
+        promptResetApiKey();
+    } else if (ddxHeaderState === 'result') {
+        document.getElementById('ddx-input').value = '';
+        document.getElementById('ddx-results-content').innerHTML =
+            '<div style="text-align:center; padding:40px 20px; color:var(--text-muted); font-size:1.05rem; line-height:1.5;">Type a clinical scenario above and tap Generate to see the AI\'s differential diagnosis.</div>';
+        document.getElementById('ddx-edit-bar').style.display = 'none';
+        document.getElementById('ddx-input-container').style.display = 'block';
+        setDdxHeaderState('search');
+    } else if (ddxHeaderState === 'viewing') {
+        ddxDeleteSavedAnalysis(ddxViewingIndex);
+    }
+}
+
+function ddxSaveCurrentAnalysis() {
+    const resultsEl = document.getElementById('ddx-results-content');
+    if (!resultsEl || !resultsEl.querySelector('[data-dx-card]')) {
+        showToast('Nothing to save yet.'); return;
+    }
+
+    const firstCard = resultsEl.querySelector('[data-dx-card]');
+    const rankSpan  = firstCard.querySelector('[style*="0.62rem"]');
+    const nameSpan  = firstCard.querySelectorAll('[style*="1.05rem"]')[0];
+const topDx     = (nameSpan ? nameSpan.textContent.trim() : 'Top Diagnosis').replace(/\*/g, '');
+    const topIcon   = firstCard.querySelector('[style*="1.9rem"]')
+                        ? firstCard.querySelector('[style*="1.9rem"]').textContent.trim() : '🥇';
+
+    const clues = [];
+    resultsEl.querySelectorAll('[style*="supporting"], [style*="key_features"], summary').forEach(el => {
+        const t = el.textContent.trim();
+        if (t && t.length < 60 && clues.length < 5 && !clues.includes(t)) clues.push(t);
+    });
+
+    const htmlSnapshot = resultsEl.innerHTML;
+    const caseText     = document.getElementById('ddx-input').value.trim();
+
+    const analysis = {
+        id: Date.now(), topIcon, topDx, clues, caseText,
+        htmlSnapshot, savedAt: new Date().toLocaleString()
+    };
+
+    const saved = ddxSavedAnalyses();
+    saved.unshift(analysis);
+    ddxSaveAnalyses(saved);
+    showToast('Analysis saved! 💾');
+
+    // Clear the textarea and results
+    document.getElementById('ddx-input').value = '';
+    document.getElementById('ddx-results-content').innerHTML =
+        '<div style="text-align:center; padding:40px 20px; color:var(--text-muted); font-size:1.05rem; line-height:1.5;">Type a clinical scenario above and tap Generate to see the AI\'s differential diagnosis.</div>';
+    document.getElementById('ddx-edit-bar').style.display = 'none';
+    document.getElementById('ddx-input-container').style.display = 'block';
+
+    setDdxHeaderState('saved');
+}
+
+function renderDdxSavedList() {
+    const container = document.getElementById('ddx-saved-list');
+    const saved = ddxSavedAnalyses();
+    if (!saved.length) {
+        container.innerHTML = '<div style="text-align:center; padding:40px 20px; color:var(--text-muted); font-size:1.05rem;">No saved analyses yet.<br>Generate a DDx and tap 💾 to save it.</div>';
+        return;
+    }
+    container.innerHTML = saved.map((a, i) => `
+        <div class="ddx-saved-card" onclick="ddxOpenSavedAnalysis(${i})">
+            <div class="ddx-saved-card-title">${a.topIcon || '🥇'} ${a.topDx}</div>
+            ${a.caseText ? `<div style="font-size:0.82rem;color:var(--text-muted);margin:6px 0 8px;line-height:1.4;font-style:italic;">"${a.caseText.substring(0,100)}${a.caseText.length>100?'…':''}"</div>` : ''}
+            <div style="font-size:0.78rem; color:var(--text-muted); font-weight:500;">${a.savedAt || ''}</div>
+        </div>
+    `).join('');
+}
+
+function ddxOpenSavedAnalysis(index) {
+    const saved = ddxSavedAnalyses();
+    const analysis = saved[index];
+    if (!analysis) return;
+    document.getElementById('ddx-analysis-view-content').innerHTML = analysis.htmlSnapshot;
+    setDdxHeaderState('viewing', index);
+}
+
+function ddxDeleteSavedAnalysis(index) {
+    const saved = ddxSavedAnalyses();
+    if (index === null || index === undefined || !saved[index]) return;
+    saved.splice(index, 1);
+    ddxSaveAnalyses(saved);
+    showToast('Analysis deleted.');
+    setDdxHeaderState('saved');
+}
+
 // =============================================
 // AI QUIZ GENERATOR
 // =============================================
@@ -4090,13 +4329,7 @@ Randomize options array. correct_index must match "${targetDisease}" position.`;
   
 
 const result = await fetchGeminiWithFallback(prompt,
-    "You are an expert medical educator. Return only valid JSON, no markdown.",
-    [
-    "gemini-2.5-flash-lite", // Extremely fast, gives you 15 RPM on the Free Tier
-    "gemini-2.5-flash",      // Great medical reasoning, gives you 10 RPM
-    "gemini-3.1-flash-lite-preview" // Insanely fast, but strict 5 RPM limit
-]
-);
+    "You are an expert medical educator. Return only valid JSON, no markdown.", accuracyModels);
 
 
     // ... existing generator code above ...
