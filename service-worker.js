@@ -252,3 +252,52 @@ self.addEventListener('fetch', event => {
         })()
     );
 });
+
+// ============================================================
+//  FCM PUSH NOTIFICATIONS & CLICKS
+// ============================================================
+
+self.addEventListener('push', event => {
+    if (!event.data) return;
+
+    try {
+        // Handle JSON payload from FCM
+        const data = event.data.json();
+        const title = data.title || data.notification?.title || "🚨 MiriMate: Emergent Task";
+        const options = {
+            body: data.body || data.notification?.body || "Check your patient tasks.",
+            icon: 'icon-192.png',
+            badge: 'icon-maskable-192.png',
+            vibrate: [200, 100, 200],
+            data: data.data || {}
+        };
+
+        event.waitUntil(self.registration.showNotification(title, options));
+    } catch (e) {
+        // Fallback for plain text payload
+        event.waitUntil(self.registration.showNotification("🚨 MiriMate: Emergent Task", {
+            body: event.data.text(),
+            icon: 'icon-192.png',
+            vibrate: [200, 100, 200]
+        }));
+    }
+});
+
+self.addEventListener('notificationclick', event => {
+    event.notification.close();
+
+    // Focus the app if it's open, otherwise open a new window
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
+            // Find an open tab/window and focus it
+            for (let i = 0; i < windowClients.length; i++) {
+                const client = windowClients[i];
+                if (client.url && 'focus' in client) {
+                    return client.focus();
+                }
+            }
+            // If no window is open, launch the app
+            return clients.openWindow('/');
+        })
+    );
+});
