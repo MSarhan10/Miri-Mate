@@ -3826,43 +3826,39 @@ catEl.className = 'lab-category' + (autoExpand ? ' expanded' : '');
             document.body.removeChild(ta); 
         }
 
-        function exportJSON() {
-            const now = new Date();
-            const d = now.getDate();
-            const m = now.getMonth() + 1;
-            const y = now.getFullYear();
-            
-            let h = now.getHours();
-            const min = now.getMinutes().toString().padStart(2, '0');
-            const ampm = h >= 12 ? 'PM' : 'AM';
-            h = h % 12;
-            h = h ? h : 12; // the hour '0' should be '12'
-            const hStr = h.toString().padStart(2, '0');
-            
-            const fileName = `MiriMate_session_${d}-${m}-${y}_${hStr}-${min}${ampm}.json`;
+        // AFTER
+function exportJSON() {
+    const userInput = prompt("Enter a name for the backup file:", "MiriMate_backup");
+    if (userInput === null) return; // User cancelled
+    const fileName = (userInput.trim() || "MiriMate_backup") + ".json";
 
-            const a = document.createElement('a'); 
-            a.href = URL.createObjectURL(new Blob([JSON.stringify(appData, null, 2)], { type: "application/json" }));
-            a.download = fileName; 
-            a.click(); 
-            URL.revokeObjectURL(a.href); 
-            showToast("Backup Downloaded");
-        }
+    const exportPayload = { rooms: appData.rooms };
 
-        function importJSON(event) {
-            const file = event.target.files[0]; if (!file) return; const reader = new FileReader();
-            reader.onload = function (e) {
-                try {
-                    const data = JSON.parse(e.target.result); if (data.rooms) appData = data;
-                    if(!appData.tasks) appData.tasks = [];
-                    // Ensure notes property exists for old imports
-                    appData.rooms.forEach(r => r.patients.forEach(p => {
-                        if (typeof p.notes === 'undefined') p.notes = "";
-                    }));
-                    saveData(); renderUI(); closeModals(); showToast("Data Loaded"); scheduleAllPendingAlerts();
-                } catch (err) { showToast("Invalid file"); }
-            }; reader.readAsText(file); event.target.value = '';
-        }
+    const a = document.createElement('a'); 
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(exportPayload, null, 2)], { type: "application/json" }));
+    a.download = fileName; 
+    a.click(); 
+    URL.revokeObjectURL(a.href); 
+    showToast("Backup Downloaded");
+}
+
+        // AFTER
+function importJSON(event) {
+    const file = event.target.files[0]; if (!file) return; const reader = new FileReader();
+    reader.onload = function (e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (!data.rooms) { showToast("Invalid file"); return; }
+            // Only restore rooms/patients/vitals — leave settings, tasks, etc. untouched
+            appData.rooms = data.rooms;
+            // Ensure notes property exists for old imports
+            appData.rooms.forEach(r => r.patients.forEach(p => {
+                if (typeof p.notes === 'undefined') p.notes = "";
+            }));
+            saveData(); renderUI(); closeModals(); showToast("Data Loaded"); scheduleAllPendingAlerts();
+        } catch (err) { showToast("Invalid file"); }
+    }; reader.readAsText(file); event.target.value = '';
+}
 
 function resetEntireApp() {
             if (confirm("⚠️ WARNING: This will permanently delete ALL rooms, patients, tasks, and settings! Are you sure you want to reset the app?")) {
